@@ -20,7 +20,8 @@ const PORT = Number(env.PORT) || 3000;
 
 const GEMINI_KEY = env.GEMINI_API_KEY || '';
 const ANTHROPIC_KEY = env.ANTHROPIC_API_KEY || '';
-const GEMINI_MODEL = env.GEMINI_MODEL || 'gemini-flash-latest';
+const GEMINI_MODELS = [...new Set([env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'].filter(Boolean))];
+let geminiWorking = null; // remembers the first model that worked
 const ANTHROPIC_MODEL = env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const ANTHROPIC_BASE = (env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
 const GEMINI_BASE = (env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
@@ -87,29 +88,46 @@ async function callAnthropic(prompt, images) {
   if (!r.ok) throw Object.assign(new Error(j?.error?.message || `Anthropic error ${r.status}`), { status: r.status });
   return (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
 }
-async function callGemini(prompt, images) {
+async function geminiOnce(model, prompt, images) {
   const parts = [...images.map(i => ({ inline_data: { mime_type: i.mime, data: i.data } })), { text: prompt }];
-  const r = await fetch(`${GEMINI_BASE}/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent`, {
+  const r = await fetch(`${GEMINI_BASE}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
     body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } }),
-    signal: AbortSignal.timeout(60000),
+    signal: AbortSignal.timeout(90000),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(j?.error?.message || `Gemini error ${r.status}`), { status: r.status });
-  return (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  if (!r.ok) throw Object.assign(new Error(`Gemini (${model}): ${j?.error?.message || 'error ' + r.status}`), { status: r.status });
+  const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  if (!text) throw Object.assign(new Error(`Gemini (${model}): empty answer (${j.candidates?.[0]?.finishReason || j.promptFeedback?.blockReason || 'unknown'})`), { status: 502 });
+  return text;
+}
+async function callGemini(prompt, images) {
+  const order = geminiWorking ? [geminiWorking, ...GEMINI_MODELS.filter(m => m !== geminiWorking)] : GEMINI_MODELS;
+  let last;
+  for (const m of order) {
+    try { const t = await geminiOnce(m, prompt, images); geminiWorking = m; return t; }
+    catch (e) {
+      last = e;
+      // bad key or bad request: other models won't help
+      if (e.status === 400 && !/model|not found|not supported/i.test(e.message)) throw e;
+      if (e.status === 401) throw e;
+    }
+  }
+  throw last;
 }
 async function askAI(prompt, images = []) {
   const list = providers();
   if (!list.length) throw Object.assign(new Error('No AI key configured'), { code: 'no_ai' });
-  let last;
+  const errs = [];
   for (const p of list) {
     try {
       const text = p === 'gemini' ? await callGemini(prompt, images) : await callAnthropic(prompt, images);
       return normalize(parseJSON(text));
-    } catch (e) { last = e; console.warn(`[ai] ${p} failed:`, e.message); }
+    } catch (e) { errs.push(e); console.warn(`[ai] ${p} failed:`, e.message); }
   }
-  throw last;
+  const quota = errs.some(e => e.status === 429 || /quota|rate/i.test(e.message));
+  throw Object.assign(new Error((quota ? 'The free AI limit was reached for now. Try again later. ' : 'The AI service had a problem. ') + 'Details: ' + errs.map(e => e.message).join(' | ').slice(0, 400)), { code: quota ? 'ai_quota' : 'ai_error' });
 }
 function normalize(d) {
   const list = Array.isArray(d) ? d : Array.isArray(d?.products) ? d.products : d?.name ? [d] : [];
@@ -153,6 +171,7 @@ async function checkUrl(u) {
   if (addrs.some(a => privateIP(a.address))) throw Object.assign(new Error('That address is not allowed'), { code: 'bad_url' });
   return url;
 }
+const READER = env.READER_FALLBACK === 'off' ? '' : (env.READER_URL || 'https://r.jina.ai/');
 const UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36';
 async function fetchPage(u) {
   let url = await checkUrl(u);
@@ -161,7 +180,7 @@ async function fetchPage(u) {
       redirect: 'manual',
       headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml', 'accept-language': 'en-US,en;q=0.9,ar;q=0.6' },
       signal: AbortSignal.timeout(15000),
-    });
+    }).catch(e => { throw Object.assign(new Error('Couldn\'t open that page'), { code: 'fetch_failed' }); });
     if (r.status >= 300 && r.status < 400 && r.headers.get('location')) {
       url = await checkUrl(new URL(r.headers.get('location'), url).toString());
       continue;
@@ -180,6 +199,16 @@ async function fetchPage(u) {
     return { html: Buffer.concat(chunks.map(c => Buffer.from(c))).toString('utf8'), finalUrl: url.toString() };
   }
   throw Object.assign(new Error('Too many redirects'), { code: 'fetch_failed' });
+}
+function looksBlocked(html) {
+  return /captcha|robot check|enter the characters you see|are you a human|access denied|request blocked|unusual traffic|cf-chl|challenge-platform|px-captcha/i.test(html.slice(0, 200000)) && html.length < 400000;
+}
+async function fetchViaReader(u) {
+  // Free public page reader used only when the shop blocks us directly.
+  const r = await fetch(READER + u, { headers: { accept: 'text/plain', 'x-return-format': 'text' }, signal: AbortSignal.timeout(30000) });
+  const t = await r.text();
+  if (!r.ok || t.length < 300 || looksBlocked(t)) throw Object.assign(new Error('The shop blocked automatic reading'), { code: 'blocked' });
+  return t.slice(0, 400000);
 }
 function decode(s) {
   return s.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'")
@@ -241,11 +270,20 @@ app.use((req, res, next) => {
 app.get('/api/config', (req, res) => {
   res.json({ ai: providers().length > 0, links: true, providers: providers() });
 });
+app.get('/api/status', async (req, res) => {
+  // Quick self-check of the AI keys (tiny text request). Never shows the keys.
+  const out = { providers: providers(), gemini: null, anthropic: null, geminiModel: geminiWorking };
+  const lim = allow(req.ip);
+  if (lim) return res.status(429).json({ error: 'rate_limited' });
+  if (GEMINI_KEY) { try { await callGemini('Reply with exactly {"ok":true}', []); out.gemini = 'ok'; out.geminiModel = geminiWorking; } catch (e) { out.gemini = e.message.slice(0, 300); } }
+  if (ANTHROPIC_KEY) { try { await callAnthropic('Reply with exactly {"ok":true}', []); out.anthropic = 'ok'; } catch (e) { out.anthropic = e.message.slice(0, 300); } }
+  res.json(out);
+});
 app.get('/healthz', (req, res) => res.send('ok'));
 
 function fail(res, e) {
   const code = e.code || (e.status === 429 ? 'rate_limited' : 'error');
-  const status = { bad_url: 400, bad_input: 400, blocked: 422, fetch_failed: 422, no_products: 422, rate_limited: 429, daily: 429, no_ai: 503 }[code] || 500;
+  const status = { bad_url: 400, bad_input: 400, blocked: 422, fetch_failed: 422, no_products: 422, rate_limited: 429, daily: 429, ai_quota: 429, ai_error: 502, no_ai: 503 }[code] || 500;
   if (status === 500) console.error(e);
   res.status(status).json({ error: code, message: status === 500 ? 'Something went wrong. Try again.' : e.message });
 }
@@ -272,9 +310,22 @@ app.post('/api/link', async (req, res) => {
     const raw = String(req.body?.url || '').trim();
     const found = raw.match(/https?:\/\/[^\s"'<>]+/i);   // allows pasting "Look at this! https://..."
     if (!found) throw Object.assign(new Error('Paste a link that starts with http'), { code: 'bad_url' });
-    const { html, finalUrl } = await fetchPage(found[0]);
-    const page = extractPage(html);
-    if (page.textLength < 300 && !page.ld.length) throw Object.assign(new Error('This shop loads its page in a way we can\'t read. Use a screenshot instead.'), { code: 'blocked' });
+    let page, finalUrl = found[0], via = 'direct';
+    try {
+      const got = await fetchPage(found[0]);
+      finalUrl = got.finalUrl;
+      if (looksBlocked(got.html)) throw Object.assign(new Error('blocked'), { code: 'blocked' });
+      page = extractPage(got.html);
+      if (page.textLength < 300 && !page.ld.length) throw Object.assign(new Error('blocked'), { code: 'blocked' });
+    } catch (e) {
+      if (!READER || !['blocked', 'fetch_failed'].includes(e.code)) throw e;
+      const text = await fetchViaReader(finalUrl).catch(() => {
+        throw Object.assign(new Error('This shop blocks automatic reading. Take a screenshot of the page and scan it instead.'), { code: 'blocked' });
+      });
+      page = { title: '', meta: {}, ld: [], excerpt: text.slice(0, 22000), textLength: text.length };
+      via = 'reader';
+    }
+    console.log(`[link] ${new URL(finalUrl).hostname} via ${via}`);
     let products = [];
     if (providers().length) {
       const lim = allow(req.ip);

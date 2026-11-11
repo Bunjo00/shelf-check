@@ -34,7 +34,8 @@ Without any key, links still work for shops that publish product data (name, pri
 | `DAILY_AI_LIMIT` | `300` | Maximum AI reads per day for the whole site. This caps your bill. |
 | `PER_IP_PER_HOUR` | `20` | Maximum AI reads per visitor per hour. Stops abuse. |
 | `AI_PROVIDER` | `auto` | `auto` = free first, then paid. `anthropic` = paid first. |
-| `GEMINI_MODEL` | `gemini-flash-latest` | Change if Google renames its models. |
+| `GEMINI_MODEL` | (auto) | Preferred Gemini model. If it fails, the server tries `gemini-flash-latest`, `gemini-flash-lite-latest`, `gemini-3.5-flash-lite`, `gemini-2.5-flash-lite` and `gemini-2.5-flash` in turn. |
+| `READER_FALLBACK` | on | When a shop blocks the server (Amazon and others), the page is read through the free r.jina.ai reader instead. Set to `off` to disable. |
 | `ANTHROPIC_MODEL` | `claude-haiku-5-5` | Claude model used. |
 
 ## Run it on a computer
@@ -44,6 +45,10 @@ npm install
 GEMINI_API_KEY=your-key npm start
 # open http://localhost:3000
 ```
+
+## Troubleshooting
+
+Open `https://your-site/api/status` to check whether the AI keys work. It shows `ok`, or the exact error from Google or Anthropic.
 
 ## Notes
 
