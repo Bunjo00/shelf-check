@@ -1,0 +1,16 @@
+{
+  "name": "shelf-check",
+  "version": "1.0.0",
+  "description": "Compare beauty products: ingredients, ethics, price and reviews. Scan screenshots or paste links.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

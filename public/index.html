@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Shelf Check — compare beauty products</title>
+<meta name="description" content="Compare makeup and skincare: ingredients, toxicity flags, cruelty-free, price and reviews. Scan screenshots or paste links from any shop.">
+<meta name="theme-color" content="#a8475e">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#faf6f2;--card:#fff;--ink:#2b2320;--muted:#7d706a;--line:#ece2da;
+  --rose:#a8475e;--rose-soft:#f6e3e7;
+  --high:#b83227;--high-bg:#fce7e4;--mod:#a86a08;--mod-bg:#fcf0d9;
+  --low:#62666e;--low-bg:#efeff1;--good:#2a7454;--good-bg:#e1f2e8;
+  --eco:#2c6886;--eco-bg:#e0eef5;--animal:#74539f;--animal-bg:#eee6f7;
+  --r:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:650;letter-spacing:-.01em}
+header{position:sticky;top:0;z-index:5;background:rgba(250,246,242,.92);backdrop-filter:blur(10px);
+  padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+header h1{font-size:22px}
+header h1 span{color:var(--rose)}
+.iconbtn{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:var(--card);border:1px solid var(--line)}
+main{max-width:860px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
+.view{display:none}.view.on{display:block}
+.lede{color:var(--muted);margin:2px 0 14px}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--line);
+  display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:11.5px;color:var(--muted);border-radius:12px}
+nav button svg{width:22px;height:22px}
+nav button.on{color:var(--rose);font-weight:600}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.spacer{flex:1}
+.btn{padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:500}
+.btn.primary{background:var(--rose);color:#fff;border-color:var(--rose)}
+.btn.small{padding:6px 10px;font-size:13px;border-radius:10px}
+.btn.danger{color:var(--high)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.list{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.pcard{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%}
+.pcard .meta{flex:1;min-width:0}
+.pcard .name{font-weight:600;line-height:1.25}
+.pcard .sub{color:var(--muted);font-size:13px}
+.ring{--v:0;--c:var(--good);width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;
+  background:conic-gradient(var(--c) calc(var(--v)*1%),#eee6df 0)}
+.ring b{width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:15px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.chip{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--low-bg);color:var(--low);white-space:nowrap}
+.chip.high{background:var(--high-bg);color:var(--high)}
+.chip.mod{background:var(--mod-bg);color:var(--mod)}
+.chip.good{background:var(--good-bg);color:var(--good)}
+.chip.eco{background:var(--eco-bg);color:var(--eco)}
+.chip.animal{background:var(--animal-bg);color:var(--animal)}
+.chip.neutral{background:#f7f3ef;color:#5d524d}
+.chip.rose{background:var(--rose-soft);color:var(--rose)}
+button.chip{cursor:pointer}
+.selbox{width:22px;height:22px;border-radius:7px;border:1.5px solid #cdbfb5;flex:none;display:grid;place-items:center;margin-top:2px}
+.selbox.on{background:var(--rose);border-color:var(--rose)}
+.selbox.on::after{content:"";width:9px;height:5px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 2px 8px;font-weight:600;font-family:Inter}
+.empty{text-align:center;color:var(--muted);padding:32px 12px}
+textarea,input[type=text],input[type=number],select{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px}
+textarea{min-height:120px;resize:vertical}
+label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:500}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
+.seg{display:flex;background:#f3ece6;border-radius:12px;padding:3px}
+.seg button{flex:1;padding:7px 4px;border-radius:9px;font-size:13px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.legend{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0}
+.summary div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}
+.summary b{display:block;font-size:20px;font-family:Fraunces,serif}
+.summary small{font-size:11.5px;color:var(--muted)}
+/* compare */
+.cmp-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff;-webkit-overflow-scrolling:touch}
+table.cmp{border-collapse:separate;border-spacing:0;min-width:100%}
+.cmp th,.cmp td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;font-size:14px;min-width:150px}
+.cmp tr:last-child td,.cmp tr:last-child th{border-bottom:0}
+.cmp th.rl{position:sticky;left:0;background:#fbf8f5;font-weight:500;color:var(--muted);font-size:12.5px;min-width:104px;max-width:110px;z-index:1}
+.cmp thead td{font-weight:600;background:#fff}
+.cmp td.best{background:#f1f9f4}
+.cmp td.best::after{content:" ★";color:var(--good);font-size:12px}
+.yes{color:var(--good);font-weight:600}.no{color:var(--high);font-weight:600}.unk{color:var(--muted)}
+/* sheet */
+.overlay{position:fixed;inset:0;background:rgba(43,35,32,.38);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.overlay.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;
+  padding:8px 18px calc(22px + env(safe-area-inset-bottom));animation:up .22s ease}
+@media(min-width:700px){.overlay{align-items:center}.sheet{border-radius:22px;max-height:86vh}}
+@keyframes up{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
+.grab{width:40px;height:5px;border-radius:9px;background:#d9cdc4;margin:4px auto 12px}
+.sheet h2{font-size:22px;margin-bottom:4px}
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;
+  padding:9px 16px;border-radius:999px;font-size:14px;z-index:30;opacity:0;transition:.2s;pointer-events:none}
+.toast.on{opacity:1}
+.note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.5}
+.warn{background:var(--mod-bg);color:#7a4d05;border-radius:12px;padding:9px 12px;font-size:13.5px;margin-top:10px}
+.reason{font-size:13px;color:var(--muted);margin-top:6px}
+.rank{font-family:Fraunces,serif;font-size:20px;color:var(--rose);width:24px;flex:none}
+.ingline{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
+.ingline:last-child{border-bottom:0}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:#d8d0ca}
+.dot.high{background:var(--high)}.dot.mod{background:var(--mod)}.dot.low{background:#a2a6ad}.dot.good{background:var(--good)}.dot.eco{background:var(--eco)}.dot.animal{background:var(--animal)}
+.toggle{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.toggle:last-child{border-bottom:0}
+.sw{width:42px;height:25px;border-radius:99px;background:#ddd2ca;position:relative;flex:none;transition:.15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw.on{background:var(--rose)}.sw.on::after{left:20px}
+a{color:var(--rose)}
+.scanhero{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;padding:22px 14px;border-radius:var(--r);
+  background:linear-gradient(135deg,#a8475e,#c86b7f);color:#fff;text-align:center;cursor:pointer;margin-bottom:14px}
+.scanhero b{font-family:Fraunces,serif;font-size:20px;font-weight:650}
+.scanhero span{font-size:13px;opacity:.9}
+.scanhero svg{width:34px;height:34px}
+.linkbox{display:flex;gap:8px;margin:-4px 0 14px}.linkbox input{flex:1}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.thumbs img{width:76px;height:76px;object-fit:cover;border-radius:12px;border:1px solid var(--line)}
+.spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--rose-soft);border-top-color:var(--rose);animation:sp 0.8s linear infinite;margin:10px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.stars{display:flex;gap:2px}
+.stars button{font-size:26px;line-height:1;color:#dccfc6;padding:2px}
+.stars button.on{color:#e0a106}
+.bar{height:8px;border-radius:9px;background:#eee6df;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;border-radius:9px}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.pc ul{padding-left:16px;font-size:13.5px;display:grid;gap:3px}
+.pc h4{font-size:12.5px;font-family:Inter;font-weight:600;margin-bottom:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Shelf <span>Check</span></h1>
+  <button class="iconbtn" data-a="settings" aria-label="Settings & data">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<main>
+  <section class="view" id="v-shelf"></section>
+  <section class="view" id="v-compare"></section>
+  <section class="view" id="v-scan"></section>
+  <section class="view" id="v-suggest"></section>
+</main>
+
+<nav>
+  <button data-tab="shelf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 12h18M8 4v8M15 12v8"/></svg>Shelf</button>
+  <button data-tab="compare"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/></svg>Compare</button>
+  <button data-tab="scan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4-4"/></svg>Check</button>
+  <button data-tab="suggest"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l2.5 5.5L20 9.5l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-1z"/></svg>Suggest</button>
+</nav>
+
+<div class="overlay" id="ov"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ INGREDIENT KNOWLEDGE BASE ============
+   l = level: high | mod | low | eco | animal | good
+   t = tags used for filters                          */
+const DB = [
+ {n:'Formaldehyde',r:/formaldehyde|formalin|methylene glycol/,l:'high',t:['formaldehyde'],w:'Classified as a known human carcinogen and a strong skin sensitiser. Banned in EU cosmetics; still found in some nail and hair-smoothing products.'},
+ {n:'Formaldehyde-releasing preservative',r:/dmdm hydantoin|imidazolidinyl urea|diazolidinyl urea|quaternium-15|bronopol|2-bromo-2-nitropropane|hydroxymethylglycinate/,l:'high',t:['formaldehyde'],w:'Preservatives that slowly release small amounts of formaldehyde over time. Common cause of contact allergy.'},
+ {n:'Restricted paraben',r:/isopropylparaben|isobutylparaben|benzylparaben|pentylparaben|phenylparaben/,l:'high',t:['paraben'],w:'Banned in the EU since 2014 because there wasn\'t enough data to show they are safe.'},
+ {n:'Long-chain paraben',r:/propylparaben|butylparaben/,l:'mod',t:['paraben'],w:'Allowed at low levels (EU max 0.14%). Show weak hormone-like activity in lab studies, so many people choose to avoid them.'},
+ {n:'Short-chain paraben',r:/methylparaben|ethylparaben/,l:'low',t:['paraben'],w:'Regulators consider these safe at permitted levels. Lowest concern of the parabens; flagged in case you prefer paraben-free.'},
+ {n:'Phthalate',r:/phthalate|\bdbp\b|\bdehp\b/,l:'high',t:['phthalate'],w:'Linked to hormone disruption. Several are banned in EU cosmetics. Can hide inside "fragrance" in some countries.'},
+ {n:'Triclosan / triclocarban',r:/triclosan|triclocarban/,l:'high',t:[],w:'Antibacterial agent with hormone-disruption and antibiotic-resistance concerns. Restricted in the EU and US.'},
+ {n:'PFAS ("forever chemical")',r:/ptfe|polytetrafluoroethylene|perfluoro|polyfluoro|fluoroalcohol|fluoroalkyl/,l:'high',t:['pfas'],w:'Per- and polyfluorinated substances persist in the body and environment for a very long time. Often in long-wear or waterproof makeup. Several US states are phasing them out of cosmetics.'},
+ {n:'Hydroquinone',r:/hydroquinone/,l:'high',t:[],w:'Skin-lightening agent. Banned in EU cosmetics and prescription-only in many countries due to irritation and ochronosis risk.'},
+ {n:'Mercury compound',r:/mercury|mercuric|thimerosal|calomel/,l:'high',t:[],w:'Toxic heavy metal sometimes found in illegal skin-lightening creams. Avoid entirely.'},
+ {n:'Lead compound',r:/lead acetate/,l:'high',t:[],w:'Toxic heavy metal; banned in EU cosmetics.'},
+ {n:'Coal tar / PPD',r:/coal tar|p-phenylenediamine|\bppd\b/,l:'high',t:[],w:'Found in some dark hair dyes. Strong sensitiser; coal tar is a known carcinogen.'},
+ {n:'Toluene',r:/toluene/,l:'high',t:[],w:'Solvent in some nail polishes. Neurotoxic at high exposure; part of the "toxic trio" in nail products.'},
+ {n:'Lilial',r:/butylphenyl methylpropional|lilial/,l:'high',t:['fragrance'],w:'Fragrance ingredient banned in the EU since 2022 (reproductive toxicity).'},
+ {n:'Butylated hydroxyanisole (BHA)',r:/butylated hydroxyanisole/,l:'high',t:[],w:'Antioxidant preservative listed as a possible human carcinogen (IARC 2B).'},
+ {n:'Isothiazolinone preservative',r:/methylisothiazolinone|methylchloroisothiazolinone/,l:'high',t:[],w:'Very common cause of contact allergy. Banned in EU leave-on products.'},
+ {n:'Cyclic silicone D4',r:/cyclotetrasiloxane|\bd4\b/,l:'high',t:['silicone'],w:'Suspected hormone disruptor and persistent in the environment. Restricted in the EU.'},
+ {n:'Cyclic silicone D5/D6',r:/cyclopentasiloxane|cyclohexasiloxane|cyclomethicone/,l:'mod',t:['silicone'],w:'Persists in the environment; the EU is restricting these in wash-off and leave-on products.'},
+ {n:'Oxybenzone',r:/oxybenzone|benzophenone-3/,l:'mod',t:['chemuv','reef'],w:'Chemical UV filter. Absorbed through skin, possible hormone effects, and linked to coral reef damage (banned in Hawaii and some other places).'},
+ {n:'Chemical UV filter',r:/homosalate|octinoxate|ethylhexyl methoxycinnamate|octisalate|ethylhexyl salicylate/,l:'mod',t:['chemuv'],w:'Absorbed through skin; some show hormone-like activity in studies. The EU has lowered limits for homosalate.'},
+ {n:'Octocrylene',r:/octocrylene/,l:'low',t:['chemuv'],w:'Chemical UV filter that can break down into benzophenone over time. Possible allergen.'},
+ {n:'Fragrance / parfum',r:/\bparfum\b|fragrance|\baroma\b/,l:'mod',t:['fragrance'],w:'One word that can stand for dozens of undisclosed chemicals. The top cause of cosmetic skin allergy. Look for "fragrance-free", not just "unscented".'},
+ {n:'Fragrance allergen',r:/limonene|linalool|citronellol|geraniol|eugenol|coumarin|citral|hydroxycitronellal|cinnamal|benzyl salicylate|benzyl benzoate|farnesol|alpha-isomethyl ionone|benzyl cinnamate/,l:'low',t:['fragrance'],w:'One of the fragrance allergens the EU requires on labels. Fine for most people, but a problem if you have sensitive skin.'},
+ {n:'Talc',r:/\btalc\b/,l:'mod',t:[],w:'Fine in itself, but there are concerns about asbestos contamination and breathing in loose powder. Choose talc-free if unsure of the source.'},
+ {n:'Carbon black',r:/carbon black|ci\s*77266/,l:'mod',t:[],w:'Black pigment. Possible carcinogen when inhaled (IARC 2B); a lower concern in eyeliners and mascaras.'},
+ {n:'Strong sulfate surfactant',r:/sodium lauryl sulfate|ammonium lauryl sulfate/,l:'mod',t:['sulfate'],w:'Effective cleanser that can irritate and dry out skin, especially in leave-on or long-contact use.'},
+ {n:'Ethoxylated sulfate',r:/laureth sulfate|laureth-\d+ sulfate/,l:'low',t:['sulfate'],w:'Milder than SLS, but can carry traces of 1,4-dioxane from manufacturing.'},
+ {n:'Ethoxylated ingredient (PEG)',r:/\bpeg-|ceteareth-|steareth-|polysorbate/,l:'low',t:[],w:'Generally safe, but may contain traces of 1,4-dioxane depending on how well it was purified.'},
+ {n:'Triethanolamine',r:/triethanolamine|\btea\b/,l:'low',t:[],w:'pH adjuster. Mild irritant at high levels.'},
+ {n:'BHT',r:/\bbht\b|butylated hydroxytoluene/,l:'low',t:[],w:'Antioxidant preservative. Low concern at cosmetic levels, but some prefer to avoid it.'},
+ {n:'Drying alcohol',r:/alcohol denat|sd alcohol|^ethanol$|^alcohol$/,l:'low',t:[],w:'Can dry or irritate skin when high on the list. Fatty alcohols (cetyl, cetearyl) are different and fine.'},
+ {n:'Petroleum-derived',r:/paraffinum liquidum|mineral oil|petrolatum|^paraffin$|microcrystalline wax/,l:'low',t:['petro'],w:'Cosmetic grades are highly refined and considered safe; flagged because it comes from fossil fuels.'},
+ {n:'Phenoxyethanol',r:/phenoxyethanol/,l:'low',t:[],w:'Common paraben alternative. Safe up to 1%; can irritate very sensitive skin.'},
+ {n:'Synthetic colorant',r:/\bci\s*[1-6]\d{4}\b|fd&c|d&c/,l:'low',t:['dye'],w:'Synthetic dye (CI numbers starting with 1–6). Generally allowed; some people react to certain dyes. Mineral pigments start with CI 7.'},
+ {n:'Comedogenic ester',r:/isopropyl myristate|isopropyl palmitate/,l:'low',t:[],w:'May clog pores on acne-prone skin.'},
+ {n:'Titanium dioxide',r:/titanium dioxide|ci\s*77891/,l:'low',t:['mineraluv'],w:'Safe on skin and a good mineral UV filter. The concern is breathing it in from loose powders or sprays.'},
+ {n:'Silicone',r:/dimethicone|methicone|dimethiconol|trimethylsiloxysilicate/,l:'eco',t:['silicone'],w:'Safe on skin and gives a smooth feel. Flagged for environment: it breaks down slowly.'},
+ {n:'Microplastic / synthetic polymer',r:/polyethylene|polypropylene|nylon-\d+|polymethyl methacrylate|acrylates copolymer|acrylates\/|polyurethane-?\d*|polystyrene|styrene\/acrylates/,l:'eco',t:['microplastic'],w:'Solid or film-forming plastic polymers that end up in waterways. The EU is phasing out intentionally added microplastics, including in makeup, by 2035.'},
+ {n:'Animal-derived',r:/cera alba|beeswax|carmine|cochineal|ci\s*75470|lanolin|collagen|keratin|\bsqualene\b|\bmel\b|honey|shellac|guanine|tallow|\bsilk\b|sericin|snail secretion|elastin|lactis|\bmilk\b|propolis|royal jelly|emu oil|mink oil|castoreum|cholesterol/,l:'animal',t:['animal'],w:'Usually or often from animals (beeswax, carmine from insects, lanolin from wool, shark squalene, etc.). Not vegan unless the brand states a plant or synthetic source.'},
+ // beneficial
+ {n:'Niacinamide',r:/niacinamide/,l:'good',t:[],w:'Vitamin B3. Strengthens the skin barrier, evens tone, calms redness.'},
+ {n:'Hyaluronic acid',r:/hyaluron/,l:'good',t:[],w:'Holds water in skin for plumper, hydrated feel.'},
+ {n:'Glycerin',r:/^glycerin$|^glycerine$/,l:'good',t:[],w:'Gentle, proven humectant that draws moisture into skin.'},
+ {n:'Ceramide',r:/ceramide/,l:'good',t:[],w:'Lipids that rebuild and protect the skin barrier.'},
+ {n:'Panthenol',r:/panthenol/,l:'good',t:[],w:'Pro-vitamin B5. Soothes and hydrates.'},
+ {n:'Vitamin E',r:/tocopher/,l:'good',t:[],w:'Antioxidant that protects oils and skin from oxidation.'},
+ {n:'Squalane',r:/squalane/,l:'good',t:[],w:'Lightweight moisturiser, usually from olives or sugarcane (plant-based, unlike squalene).'},
+ {n:'Zinc oxide',r:/zinc oxide|ci\s*77947/,l:'good',t:['mineraluv'],w:'Mineral UV filter giving broad UVA/UVB protection; gentle and reef-friendlier.'},
+ {n:'Soothing botanical',r:/allantoin|centella|madecassoside|bisabolol|aloe barbadensis|panax|camellia sinensis/,l:'good',t:[],w:'Calming, skin-soothing ingredient.'},
+ {n:'Plant butter / oil',r:/butyrospermum|shea|simmondsia|jojoba|argania|squalane|rosa canina|prunus amygdalus/,l:'good',t:[],w:'Nourishing plant lipid.'},
+];
+const LV_ORDER=['high','mod','low','eco','animal','good'];
+const LV_LABEL={high:'High concern',mod:'Moderate',low:'Low concern',eco:'Environmental',animal:'Animal-derived',good:'Beneficial',neutral:'No flags'};
+const ALT={
+ paraben:'Paraben-free products often use phenoxyethanol, sodium benzoate or potassium sorbate instead.',
+ formaldehyde:'Avoid DMDM hydantoin and the "-urea" preservatives; look for phenoxyethanol or ethylhexylglycerin systems.',
+ fragrance:'Pick "fragrance-free" (not "unscented", which may use masking scents).',
+ microplastic:'Look for natural film formers and waxes, silica or cellulose instead of acrylates/polyethylene.',
+ pfas:'Avoid "PTFE" or anything with "fluoro" in the name — common in long-wear and waterproof formulas.',
+ chemuv:'Mineral sunscreens use zinc oxide or titanium dioxide instead of chemical filters.',
+ sulfate:'Gentler cleansers use coco-glucoside, decyl glucoside or sodium cocoyl isethionate.',
+ animal:'Vegan versions swap beeswax for candelilla/carnauba wax and carmine for iron oxides.',
+ silicone:'Silicone-free versions use plant esters or squalane for slip.'
+};
+
+/* ============ STATE ============ */
+const KEY='shelfcheck.v1';
+const demo=[
+ {name:'Hydra Cloud Moisturizer',brand:'Demo · Dewlight',category:'Moisturizer',price:145,size:50,unit:'ml',cf:'yes',vegan:'yes',plastic:'yes',refill:'yes',
+  ing:'Aqua, Glycerin, Squalane, Niacinamide, Sodium Hyaluronate, Ceramide NP, Panthenol, Caprylic/Capric Triglyceride, Cetearyl Alcohol, Tocopherol, Phenoxyethanol, Ethylhexylglycerin, Xanthan Gum'},
+ {name:'Daily Rich Cream',brand:'Demo · Glowmart',category:'Moisturizer',price:39,size:75,unit:'ml',cf:'unknown',vegan:'unknown',plastic:'no',refill:'no',
+  ing:'Aqua, Paraffinum Liquidum, Petrolatum, Glycerin, Cetearyl Alcohol, Dimethicone, Cyclopentasiloxane, Carbomer, Triethanolamine, Methylparaben, Propylparaben, DMDM Hydantoin, Parfum, Linalool, Limonene, CI 19140'},
+ {name:'Velvet Hour Matte Lipstick',brand:'Demo · Maison Rouge',category:'Lipstick',price:89,size:3.5,unit:'g',cf:'no',vegan:'no',plastic:'no',refill:'no',
+  ing:'Ricinus Communis Seed Oil, Cera Alba, Candelilla Cera, Mica, Talc, Lanolin, Isopropyl Myristate, Polyethylene, Tocopheryl Acetate, Parfum, BHT, CI 75470, CI 77491'},
+ {name:'Petal Tinted Lip Balm',brand:'Demo · Kind Bloom',category:'Lipstick',price:65,size:4,unit:'g',cf:'yes',vegan:'yes',plastic:'yes',refill:'no',
+  ing:'Butyrospermum Parkii Butter, Candelilla Cera, Ricinus Communis Seed Oil, Simmondsia Chinensis Seed Oil, Tocopherol, CI 77491, Titanium Dioxide, Rosmarinus Officinalis Leaf Extract'},
+ {name:'Lumen Lash Mascara',brand:'Demo · Lumen',category:'Mascara',price:110,size:9,unit:'ml',cf:'yes',vegan:'no',plastic:'no',refill:'no',
+  ing:'Aqua, Acrylates Copolymer, Cera Alba, Stearic Acid, Paraffin, Triethanolamine, Butylene Glycol, Polytetrafluoroethylene, Nylon-12, Phenoxyethanol, Methylparaben, CI 77499'},
+ {name:'Clear Day SPF 50',brand:'Demo · SunCo',category:'Sunscreen',price:79,size:50,unit:'ml',cf:'unknown',vegan:'unknown',plastic:'no',refill:'no',
+  ing:'Aqua, Homosalate, Octocrylene, Ethylhexyl Methoxycinnamate, Benzophenone-3, Alcohol Denat., Glycerin, Dimethicone, Acrylates/C10-30 Alkyl Acrylate Crosspolymer, Parfum, Methylisothiazolinone'},
+ {name:'Mineral Shield SPF 30',brand:'Demo · Kind Bloom',category:'Sunscreen',price:120,size:50,unit:'ml',cf:'yes',vegan:'yes',plastic:'yes',refill:'no',
+  ing:'Aqua, Zinc Oxide, Caprylic/Capric Triglyceride, Glycerin, Squalane, Simmondsia Chinensis Seed Oil, Tocopherol, Sodium Hyaluronate, Allantoin, Phenoxyethanol'},
+];
+let S={products:[],compare:[],currency:'AED',prefs:{cf:true,vegan:false,plastic:false,nofrag:false,nopar:true,nomicro:false,nohigh:true,cat:'Any',budget:'',mode:'balanced'}};
+let tab='shelf', scanText='';
+const uid=()=>Math.random().toString(36).slice(2,10);
+function load(){
+  try{const raw=localStorage.getItem(KEY); if(raw){const d=JSON.parse(raw); S={...S,...d,prefs:{...S.prefs,...(d.prefs||{})}}; return;}}catch(e){}
+  S.products=demo.map(p=>({...p,id:uid(),demo:true}));
+  S.compare=S.products.filter(p=>p.category==='Moisturizer').map(p=>p.id);
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+/* ============ ANALYSIS ============ */
+function split(text){
+  text=(text||'').replace(/^\s*(ingredients|ingrédients|inci)\s*[:\-]/i,'').replace(/\[\s*\+\/-.*?\]/g,m=>','+m.replace(/[\[\]]|\+\/-|may contain:?/gi,'')+',').replace(/(\+\/-|may contain:?)/gi,',');
+  const out=[];let d=0,cur='';
+  for(const ch of text){
+    if(ch==='('||ch==='[')d++; if(ch===')'||ch===']')d=Math.max(0,d-1);
+    if(d===0&&/[,;\n•·|]/.test(ch)){out.push(cur);cur='';}else cur+=ch;
+  }
+  out.push(cur);
+  return out.map(s=>s.trim().replace(/\.$/,'').replace(/\s+/g,' ')).filter(s=>s.length>1);
+}
+function hits(name){const s=name.toLowerCase(); return DB.filter(e=>e.r.test(s));}
+function worst(h){for(const l of LV_ORDER) if(h.some(e=>e.l===l)) return l; return 'neutral';}
+const PEN={high:20,mod:8,low:2};
+function analyze(text){
+  const list=split(text).map(name=>{const h=hits(name);return {name,h,lv:worst(h)}});
+  const by={high:[],mod:[],low:[],eco:[],animal:[],good:[]}; const tags=new Set(); let pen=0;
+  list.forEach(i=>{
+    const seen=new Set();
+    i.h.forEach(e=>{ if(!seen.has(e.l)){by[e.l].push(i);seen.add(e.l)} e.t.forEach(t=>tags.add(t)); if(PEN[e.l]) pen+=PEN[e.l]; });
+  });
+  return {list,by,tags,n:list.length,safety:list.length?Math.max(0,100-pen):null};
+}
+function ethics(p,a){
+  let s=0,unk=0,warn=[];
+  if(p.cf==='yes')s+=35; else if(p.cf==='unknown')unk++;
+  if(p.vegan==='yes'){ if(a.tags.has('animal')){s+=10;warn.push('Marked vegan but contains possibly animal-derived: '+a.by.animal.map(i=>i.name).join(', ')+'. Check with the brand.');} else s+=25; }
+  else if(p.vegan==='unknown'){ if(!a.tags.has('animal')&&a.n) s+=12; else unk++; }
+  if(p.plastic==='yes')s+=20; else if(p.plastic==='unknown')unk++;
+  if(p.refill==='yes')s+=10;
+  if(a.n&&!a.tags.has('microplastic')&&!a.tags.has('pfas'))s+=10;
+  return {score:s,unk,warn};
+}
+function per10(p){return p.price>0&&p.size>0? p.price/p.size*10 : null}
+/* Reviews: each batch = one scan/paste. Combined into one review score. */
+function reviewAgg(p){
+  const B=(p.reviews||[]).filter(b=>b&&typeof b.sentiment==='number');
+  if(!B.length&&!p.myRating) return null;
+  let wsum=0,ssum=0; B.forEach(b=>{const w=Math.max(1,b.read||1);wsum+=w;ssum+=b.sentiment*w});
+  const sent=wsum?ssum/wsum:null;
+  const rated=B.filter(b=>b.rating>0); let rating=null,count=0;
+  if(rated.length){let rw=0,rs=0;rated.forEach(b=>{const w=Math.max(1,b.count||1);rw+=w;rs+=b.rating*w});rating=rs/rw;count=Math.max(...rated.map(b=>b.count||0));}
+  const parts=[];
+  if(rating!=null)parts.push([rating/5*100,.4]);
+  if(sent!=null)parts.push([sent,.45]);
+  if(p.myRating)parts.push([p.myRating/5*100,B.length?.15:1]);
+  const tw=parts.reduce((a,x)=>a+x[1],0); const score=Math.round(parts.reduce((a,x)=>a+x[0]*x[1],0)/tw);
+  const uniq=arr=>{const seen=new Set();return arr.filter(x=>{const k=String(x).toLowerCase().slice(0,40);if(!x||seen.has(k))return false;seen.add(k);return true})};
+  const read=B.reduce((a,b)=>a+(b.read||0),0);
+  return {score,rating,count,read,sent:sent==null?null:Math.round(sent),
+    pros:uniq(B.flatMap(b=>b.pros||[])).slice(0,5),cons:uniq(B.flatMap(b=>b.cons||[])).slice(0,5),
+    skin:uniq(B.flatMap(b=>b.skin||[])).slice(0,4),conf:read>=30?'many reviews':read>=8?'some reviews':read?'few reviews':'your rating only'};
+}
+function full(p){const a=analyze(p.ing);const e=ethics(p,a);return {p,a,e,v:per10(p),r:reviewAgg(p)}}
+function grade(s){ if(s==null)return['—','var(--low)']; if(s>=80)return['Great','var(--good)']; if(s>=60)return['Good','#5f8f3a']; if(s>=40)return['Caution','var(--mod)']; return['Avoid','var(--high)'];}
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>v==null||isNaN(v)?'—':(S.currency+' '+(Math.round(v*100)/100).toLocaleString(undefined,{maximumFractionDigits:2}));
+const tri=v=>v==='yes'?'<span class="yes">Yes</span>':v==='no'?'<span class="no">No</span>':'<span class="unk">Unknown</span>';
+function ring(s,size){const [,c]=grade(s);return `<div class="ring" style="--v:${s??0};--c:${c}${size?';width:'+size+'px;height:'+size+'px':''}"><b>${s??'—'}</b></div>`}
+function ingChip(i){return `<button class="chip ${i.lv}" data-a="ing" data-n="${esc(i.name)}">${esc(i.name)}</button>`}
+function flagChips(f){
+  const c=[];const {a,e,p}=f;
+  if(f.r){const st=f.r.rating!=null?f.r.rating.toFixed(1):f.p.myRating?String(f.p.myRating):'';c.push(`<span class="chip" style="background:#fdf3d6;color:#8a6200">${st?'★ '+st+' · ':''}Reviews ${f.r.score}</span>`);}
+  if(a.by.high.length)c.push(`<span class="chip high">${a.by.high.length} high concern</span>`);
+  if(a.by.mod.length)c.push(`<span class="chip mod">${a.by.mod.length} moderate</span>`);
+  if(p.cf==='yes')c.push('<span class="chip good">Cruelty-free</span>');
+  if(p.vegan==='yes'&&!a.tags.has('animal'))c.push('<span class="chip good">Vegan</span>');
+  if(a.tags.has('animal'))c.push('<span class="chip animal">Animal-derived</span>');
+  if(a.tags.has('microplastic'))c.push('<span class="chip eco">Microplastics</span>');
+  if(a.tags.has('pfas'))c.push('<span class="chip high">PFAS</span>');
+  if(p.plastic==='yes')c.push('<span class="chip eco">Plastic-free pack</span>');
+  if(!a.tags.has('fragrance')&&a.n)c.push('<span class="chip neutral">Fragrance-free</span>');
+  return c.join('');
+}
+
+/* ============ VIEWS ============ */
+function cats(){return [...new Set(S.products.map(p=>p.category).filter(Boolean))].sort()}
+let shelfFilter='All';
+function renderShelf(){
+  const el=document.getElementById('v-shelf');
+  const items=S.products.filter(p=>shelfFilter==='All'||p.category===shelfFilter).map(full);
+  const hasDemo=S.products.some(p=>p.demo);
+  el.innerHTML=`
+  <div class="row"><h2 style="font-size:24px">My shelf</h2><span class="spacer"></span><button class="btn primary" data-a="add">+ Add product</button></div>
+  <p class="lede">Tap a product for the full ingredient breakdown. Tick the boxes to compare.</p>
+  ${scanHero()}
+  ${cats().length>1?`<div class="chips" style="margin-bottom:12px">${['All',...cats()].map(c=>`<button class="chip ${c===shelfFilter?'rose':'neutral'}" data-a="sf" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:''}
+  ${items.length?`<div class="list">${items.map(f=>{const sel=S.compare.includes(f.p.id);return `
+    <div class="card pcard">
+      <button class="selbox ${sel?'on':''}" data-a="sel" data-id="${f.p.id}" aria-label="Compare"></button>
+      <button class="meta" style="text-align:left" data-a="open" data-id="${f.p.id}">
+        <div class="name">${esc(f.p.name)}</div>
+        <div class="sub">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${esc(f.p.category||'')}</div>
+        <div class="sub">${money(f.p.price)}${f.p.size?` · ${f.p.size}${f.p.unit}`:''}${f.v?` · <b style="color:var(--ink)">${money(f.v)}</b>/10${f.p.unit}`:''}</div>
+        <div class="chips">${flagChips(f)}</div>
+      </button>
+      <div style="text-align:center">${ring(f.a.safety)}<div class="sub" style="font-size:11px;margin-top:3px">safety</div></div>
+    </div>`}).join('')}</div>`:`<div class="empty card">No products yet. Add one, or paste an ingredient list in <b>Check</b>.</div>`}
+  ${S.compare.length?`<div class="row" style="margin-top:14px"><span class="sub">${S.compare.length} selected</span><span class="spacer"></span><button class="btn small" data-a="clearsel">Clear</button><button class="btn small primary" data-a="go" data-t="compare">Compare →</button></div>`:''}
+  ${hasDemo?`<div class="warn">The products marked <b>Demo</b> are made-up examples to show how the app works. <button class="btn small" style="margin-left:4px" data-a="cleardemo">Remove demo products</button></div>`:''}`;
+}
+
+function renderCompare(){
+  const el=document.getElementById('v-compare');
+  const fs=S.compare.map(id=>S.products.find(p=>p.id===id)).filter(Boolean).map(full);
+  if(fs.length<2){
+    el.innerHTML=`<h2 style="font-size:24px">Compare</h2><p class="lede">Pick 2–4 products to see them side by side.</p>
+    <div class="card">${S.products.map(p=>`<div class="toggle"><button class="selbox ${S.compare.includes(p.id)?'on':''}" data-a="sel" data-id="${p.id}"></button><div style="flex:1"><div style="font-weight:500">${esc(p.name)}</div><div class="sub" style="font-size:12.5px;color:var(--muted)">${esc(p.category||'')}</div></div></div>`).join('')||'<div class="empty">Add products to your shelf first.</div>'}</div>`;
+    return;
+  }
+  const units=new Set(fs.map(f=>f.p.unit));
+  const rows=[
+    ['Price',f=>money(f.p.price),f=>f.p.price,'min'],
+    ['Size',f=>f.p.size?f.p.size+' '+f.p.unit:'—'],
+    ['Price per 10 '+[...units].join('/'),f=>money(f.v),f=>f.v,'min'],
+    ['Safety score',f=>`<b>${f.a.safety??'—'}</b> <span class="sub">${grade(f.a.safety)[0]}</span>`,f=>f.a.safety,'max'],
+    ['Ethics score',f=>`<b>${f.e.score}</b>${f.e.unk?` <span class="sub">(${f.e.unk} unknown)</span>`:''}`,f=>f.e.score,'max'],
+    ['Cruelty-free',f=>tri(f.p.cf)],
+    ['Vegan',f=>tri(f.p.vegan)+(f.a.tags.has('animal')?'<div class="chips"><span class="chip animal">has animal-derived</span></div>':'')],
+    ['Plastic-free pack',f=>tri(f.p.plastic)],
+    ['Refillable',f=>tri(f.p.refill)],
+    ['Review score',f=>f.r?`<b>${f.r.score}</b> <span class="sub">${f.r.rating!=null?'★'+f.r.rating.toFixed(1)+' · ':''}${f.r.conf}</span>`:'<span class="unk">No reviews yet</span>',f=>f.r?f.r.score:null,'max'],
+    ['People love',f=>f.r&&f.r.pros.length?`<ul style="padding-left:16px;font-size:13px">${f.r.pros.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span class="unk">—</span>'],
+    ['Complaints',f=>f.r&&f.r.cons.length?`<ul style="padding-left:16px;font-size:13px">${f.r.cons.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span class="unk">—</span>'],
+    ['My rating',f=>f.p.myRating?'★'.repeat(f.p.myRating):'<span class="unk">—</span>',f=>f.p.myRating||null,'max'],
+    ['High concern',f=>f.a.by.high.length?`<div class="chips" style="margin:0">${f.a.by.high.map(ingChip).join('')}</div>`:'<span class="yes">None</span>',f=>f.a.by.high.length,'min'],
+    ['Moderate',f=>f.a.by.mod.length?`<div class="chips" style="margin:0">${f.a.by.mod.map(ingChip).join('')}</div>`:'<span class="yes">None</span>',f=>f.a.by.mod.length,'min'],
+    ['Plastics & PFAS',f=>{const l=[...f.a.by.eco.filter(i=>i.h.some(e=>e.t.includes('microplastic'))),...f.a.list.filter(i=>i.h.some(e=>e.t.includes('pfas')))];return l.length?`<div class="chips" style="margin:0">${l.map(ingChip).join('')}</div>`:'<span class="yes">None</span>'}],
+    ['Fragrance',f=>f.a.tags.has('fragrance')?'<span class="no">Contains</span>':'<span class="yes">Free</span>'],
+    ['Good stuff',f=>f.a.by.good.length?`<div class="chips" style="margin:0">${f.a.by.good.map(ingChip).join('')}</div>`:'<span class="unk">—</span>'],
+    ['Ingredients',f=>f.a.n,f=>f.a.n,'min'],
+  ];
+  const best=(get,dir)=>{const vals=fs.map(get).filter(v=>v!=null&&!isNaN(v));if(vals.length<2)return null;const b=dir==='min'?Math.min(...vals):Math.max(...vals);return vals.filter(v=>v===b).length===vals.length?null:b};
+  const sets=fs.map(f=>new Set(f.a.list.map(i=>i.name.toLowerCase())));
+  const shared=[...sets[0]].filter(n=>sets.every(s=>s.has(n)));
+  // verdict
+  const pick=(fn)=>fs.reduce((a,b)=>fn(b)>fn(a)?b:a);
+  const safest=pick(f=>f.a.safety??-1), ethic=pick(f=>f.e.score), cheap=fs.filter(f=>f.v).sort((a,b)=>a.v-b.v)[0];
+  el.innerHTML=`<div class="row"><h2 style="font-size:24px">Compare</h2><span class="spacer"></span><button class="btn small" data-a="sharecmp">Share</button><button class="btn small" data-a="clearsel">Clear</button></div>
+  <p class="lede">★ marks the best in each row. Tap any ingredient to see why it's flagged.</p>
+  <div class="card" style="margin-bottom:12px">
+    <div class="sub" style="color:var(--muted);font-size:13px;margin-bottom:6px">Quick verdict</div>
+    <div>🛡️ <b>Safest formula:</b> ${esc(safest.p.name)}</div>
+    <div>🌿 <b>Most ethical:</b> ${esc(ethic.p.name)}</div>
+    ${(()=>{const rv=fs.filter(f=>f.r);if(!rv.length)return '';const b=rv.reduce((a,c)=>c.r.score>a.r.score?c:a);return `<div>💬 <b>Best reviewed:</b> ${esc(b.p.name)} (${b.r.score})</div>`})()}
+    ${cheap?`<div>💸 <b>Best value:</b> ${esc(cheap.p.name)} (${money(cheap.v)}/10${cheap.p.unit})</div>`:''}
+    ${units.size>1?'<div class="warn">These are sold in different units (ml and g), so the price per 10 is only a rough comparison.</div>':''}
+  </div>
+  <div class="cmp-wrap"><table class="cmp">
+    <thead><tr><th class="rl"></th>${fs.map(f=>`<td><div>${esc(f.p.name)}</div><div class="sub" style="font-weight:400;color:var(--muted);font-size:12.5px">${esc(f.p.brand||'')}</div><button class="btn small" style="margin-top:6px" data-a="sel" data-id="${f.p.id}">Remove</button></td>`).join('')}</tr></thead>
+    <tbody>${rows.map(([lab,show,get,dir])=>{const b=get?best(get,dir):null;return `<tr><th class="rl">${lab}</th>${fs.map(f=>`<td class="${b!=null&&get(f)===b?'best':''}">${show(f)}</td>`).join('')}</tr>`}).join('')}</tbody>
+  </table></div>
+  <div class="section-title">In all of them (${shared.length})</div>
+  <div class="card">${shared.length?`<div class="chips" style="margin:0">${shared.map(n=>{const i=fs[0].a.list.find(x=>x.name.toLowerCase()===n);return ingChip(i)}).join('')}</div>`:'<span class="sub" style="color:var(--muted)">No ingredients in common.</span>'}</div>
+  ${fs.map((f,k)=>{const u=f.a.list.filter(i=>!sets.some((s,j)=>j!==k&&s.has(i.name.toLowerCase())));return `<div class="section-title">Only in ${esc(f.p.name)} (${u.length})</div><div class="card"><div class="chips" style="margin:0">${u.map(ingChip).join('')||'<span class="sub">—</span>'}</div></div>`}).join('')}`;
+}
+
+function renderScan(){
+  const el=document.getElementById('v-scan');
+  el.innerHTML=`<h2 style="font-size:24px">Check ingredients</h2>
+  <p class="lede">Scan a label, or paste the ingredient list from a product page, and see what's in it straight away.</p>
+  ${scanHero()}
+  <textarea id="scanbox" placeholder="e.g. Aqua, Glycerin, Cetearyl Alcohol, Parfum, Methylparaben…">${esc(scanText)}</textarea>
+  <div class="row" style="margin-top:8px"><button class="btn small" data-a="scanclear">Clear</button><span class="spacer"></span><button class="btn small primary" data-a="scansave">Save as product</button></div>
+  <div id="scanout"></div>`;
+  document.getElementById('scanbox').addEventListener('input',e=>{scanText=e.target.value;renderScanOut()});
+  renderScanOut();
+}
+function analysisHTML(a){
+  if(!a.n) return '';
+  const [g,c]=grade(a.safety);
+  const tips=[...a.tags].filter(t=>ALT[t]).map(t=>`<li>${ALT[t]}</li>`).join('');
+  return `
+  <div class="card" style="margin-top:12px;display:flex;gap:14px;align-items:center">${ring(a.safety,62)}<div><div style="font-family:Fraunces,serif;font-size:20px;color:${c}">${g}</div><div class="sub" style="color:var(--muted);font-size:13px">Ingredient safety score · ${a.n} ingredients</div></div></div>
+  <div class="summary">
+    <div><b style="color:var(--high)">${a.by.high.length}</b><small>High</small></div>
+    <div><b style="color:var(--mod)">${a.by.mod.length}</b><small>Moderate</small></div>
+    <div><b style="color:var(--eco)">${a.by.eco.length}</b><small>Eco</small></div>
+    <div><b style="color:var(--good)">${a.by.good.length}</b><small>Beneficial</small></div>
+  </div>
+  ${a.tags.has('animal')?`<div class="warn" style="background:var(--animal-bg);color:var(--animal)">Possibly not vegan: ${a.by.animal.map(i=>esc(i.name)).join(', ')}</div>`:''}
+  ${tips?`<div class="section-title">Swap ideas</div><div class="card"><ul style="padding-left:18px;display:grid;gap:6px;font-size:14px">${tips}</ul></div>`:''}
+  <div class="section-title">Every ingredient, in label order</div>
+  <div class="card" style="padding:4px 14px">${a.list.map(i=>`<button class="ingline" style="width:100%;text-align:left" data-a="ing" data-n="${esc(i.name)}"><span class="dot ${i.lv}"></span><span style="flex:1"><span style="font-weight:500">${esc(i.name)}</span>${i.h.length?`<br><span style="font-size:12.5px;color:var(--muted)">${i.h.map(e=>e.n).join(' · ')}</span>`:''}</span><span class="chip ${i.lv}" style="font-size:11px">${LV_LABEL[i.lv]}</span></button>`).join('')}</div>
+  <p class="note">Ingredients near the top of the list are present in the highest amounts. A flag means an ingredient has a known concern, not that the product is unsafe. How much is in it, how often you use it, and whether it stays on your skin all matter. This is not medical advice.</p>`;
+}
+function renderScanOut(){
+  const a=analyze(scanText);
+  document.getElementById('scanout').innerHTML=a.n?analysisHTML(a):`<div class="card" style="margin-top:12px"><div class="sub" style="color:var(--muted);margin-bottom:8px">How flags work</div><div class="legend">${['high','mod','low','eco','animal','good'].map(l=>`<span class="chip ${l}">${LV_LABEL[l]}</span>`).join('')}</div><p style="font-size:14px">Shelf Check knows ${DB.length} ingredient groups: preservatives, fragrance, UV filters, PFAS, microplastics, animal-derived ingredients and more.</p></div>`;
+}
+
+function renderSuggest(){
+  const el=document.getElementById('v-suggest'); const P=S.prefs;
+  const T=(k,label,sub)=>`<div class="toggle"><div style="flex:1"><div style="font-weight:500">${label}</div>${sub?`<div style="font-size:12.5px;color:var(--muted)">${sub}</div>`:''}</div><button class="sw ${P[k]?'on':''}" data-a="pref" data-k="${k}" aria-label="${label}"></button></div>`;
+  const all=S.products.map(full);
+  const reasons=f=>{const r=[];const p=f.p,a=f.a;
+    if(P.cat!=='Any'&&p.category!==P.cat)r.push('different category');
+    if(P.cf&&p.cf!=='yes')r.push(p.cf==='no'?'not cruelty-free':'cruelty-free unknown');
+    if(P.vegan&&(p.vegan!=='yes'||a.tags.has('animal')))r.push('not confirmed vegan');
+    if(P.plastic&&p.plastic!=='yes')r.push('plastic packaging');
+    if(P.nofrag&&a.tags.has('fragrance'))r.push('contains fragrance');
+    if(P.nopar&&a.tags.has('paraben'))r.push('contains parabens');
+    if(P.nomicro&&(a.tags.has('microplastic')||a.tags.has('pfas')))r.push('microplastics/PFAS');
+    if(P.nohigh&&a.by.high.length)r.push(a.by.high.length+' high-concern ingredient'+(a.by.high.length>1?'s':''));
+    if(P.budget&&p.price>+P.budget)r.push('over budget');
+    return r};
+  const vs=all.filter(f=>f.v).map(f=>f.v); const vmin=Math.min(...vs);
+  const valScore=f=>f.v?Math.round(vmin/f.v*100):40;
+  const score=f=>{const s=f.a.safety??50,e=f.e.score,v=valScore(f),r=f.r?f.r.score:50;
+    if(P.mode==='safest')return s*.75+e*.1+v*.05+r*.1;
+    if(P.mode==='ethical')return e*.65+s*.2+v*.05+r*.1;
+    if(P.mode==='value')return v*.6+s*.15+e*.1+r*.15;
+    if(P.mode==='reviews')return r*.7+s*.2+e*.1;
+    return s*.35+e*.25+v*.15+r*.25};
+  const pass=all.filter(f=>!reasons(f).length).sort((a,b)=>score(b)-score(a));
+  const fail=all.filter(f=>reasons(f).length&&(P.cat==='Any'||f.p.category===P.cat));
+  const why=f=>{const w=[];if(f.a.safety>=80)w.push('clean formula');if(f.p.cf==='yes')w.push('cruelty-free');if(f.p.plastic==='yes')w.push('plastic-free pack');if(f.v&&f.v===vmin)w.push('best price per '+f.p.unit);if(f.r&&f.r.score>=75)w.push('well reviewed ('+f.r.score+')');if(f.r&&f.r.cons.length&&f.r.score<60)w.push('note: '+f.r.cons[0]);if(f.a.by.good.length)w.push(f.a.by.good.slice(0,2).map(i=>i.h.find(e=>e.l==='good').n.toLowerCase()).join(' + '));return w.join(' · ')||'meets your filters'};
+  // swaps: products scoring low with a better one in same category
+  const swaps=all.filter(f=>(f.a.safety??100)<60).map(f=>{const alt=all.filter(o=>o.p.id!==f.p.id&&o.p.category===f.p.category&&(o.a.safety??0)>(f.a.safety??0)+15).sort((a,b)=>score(b)-score(a))[0];return alt?{f,alt}:null}).filter(Boolean);
+  el.innerHTML=`<h2 style="font-size:24px">Suggest</h2><p class="lede">Tell it what matters to you. It ranks what's on your shelf and suggests better swaps.</p>
+  <div class="card" style="padding:4px 14px">
+    ${T('cf','Cruelty-free only')}${T('vegan','Vegan only','Also checks the ingredients for animal-derived ones')}
+    ${T('plastic','Plastic-free packaging')}${T('nofrag','Fragrance-free','Good for sensitive skin')}
+    ${T('nopar','No parabens')}${T('nomicro','No microplastics or PFAS')}${T('nohigh','No high-concern ingredients')}
+  </div>
+  <div class="grid2" style="margin-top:10px">
+    <div><label class="f">Category</label><select data-a="prefsel" data-k="cat">${['Any',...cats()].map(c=>`<option ${c===P.cat?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div><label class="f">Max price (${esc(S.currency)})</label><input type="number" inputmode="decimal" data-a="prefsel" data-k="budget" value="${esc(P.budget)}" placeholder="No limit"></div>
+  </div>
+  <label class="f">Rank by</label>
+  <div class="seg">${[['balanced','Balanced'],['safest','Safest'],['ethical','Ethical'],['reviews','Reviews'],['value','Value']].map(([k,l])=>`<button class="${P.mode===k?'on':''}" data-a="mode" data-k="${k}">${l}</button>`).join('')}</div>
+  <div class="section-title">Top picks (${pass.length})</div>
+  ${pass.length?`<div style="display:grid;gap:8px">${pass.map((f,i)=>`<button class="card pcard" data-a="open" data-id="${f.p.id}"><span class="rank">${i+1}</span><span class="meta"><span class="name" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.category||'')} · ${money(f.p.price)}</span><span class="reason" style="display:block">✓ ${esc(why(f))}</span></span>${ring(f.a.safety,46)}</button>`).join('')}</div>`:'<div class="card empty">Nothing on your shelf matches every filter. Try turning one off, or add more products.</div>'}
+  ${swaps.length?`<div class="section-title">Better swaps</div><div style="display:grid;gap:8px">${swaps.map(({f,alt})=>`<div class="card"><div class="sub" style="color:var(--muted);font-size:13px">Instead of</div><div style="font-weight:600">${esc(f.p.name)} <span class="chip high" style="margin-left:4px">${f.a.safety}</span></div><div class="sub" style="color:var(--muted);font-size:13px;margin-top:6px">Try</div><button style="font-weight:600;text-align:left" data-a="open" data-id="${alt.p.id}">${esc(alt.p.name)} <span class="chip good" style="margin-left:4px">${alt.a.safety}</span></button><div class="reason">${[...f.a.tags].filter(t=>ALT[t]&&!alt.a.tags.has(t)).slice(0,2).map(t=>ALT[t]).join(' ')}</div></div>`).join('')}</div>`:''}
+  ${fail.length?`<div class="section-title">Didn't make the cut</div><div class="card" style="padding:4px 14px">${fail.map(f=>`<div class="toggle"><div style="flex:1"><div style="font-weight:500">${esc(f.p.name)}</div><div style="font-size:12.5px;color:var(--high)">${reasons(f).join(' · ')}</div></div></div>`).join('')}</div>`:''}`;
+}
+
+/* ============ SHEETS ============ */
+const ov=document.getElementById('ov'),sh=document.getElementById('sheet');
+function openSheet(html){sh.innerHTML='<div class="grab"></div>'+html;ov.classList.add('on');sh.scrollTop=0}
+function closeSheet(){ov.classList.remove('on')}
+ov.addEventListener('click',e=>{if(e.target===ov)closeSheet()});
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1800)}
+
+function productSheet(id,fresh){
+  const p=S.products.find(x=>x.id===id); if(!p)return; const f=full(p);
+  openSheet(`${fresh?`<div class="warn" style="background:var(--good-bg);color:var(--good);margin:0 0 12px">✓ Added${S.compare.includes(id)?' and ready to compare':''}. Tap Edit if anything looks off.${!p.ing?'<br><b>No ingredient list was found. Try another photo of the back.</b>':''}</div>
+  <div class="row" style="margin-bottom:12px">${AI?`<label class="btn small primary" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Scan another</label>`:''}${S.compare.length>=2?'<button class="btn small" data-a="gocmp">Compare now →</button>':''}</div>`:''}
+  <div class="row" style="align-items:flex-start"><div style="flex:1"><h2>${esc(p.name)}</h2><div class="sub" style="color:var(--muted)">${esc(p.brand||'')} · ${esc(p.category||'')}</div></div><button class="iconbtn" data-a="close">✕</button></div>
+  <div class="grid2" style="margin-top:12px">
+    <div class="card" style="display:flex;gap:10px;align-items:center">${ring(f.a.safety)}<div><b>Safety</b><div class="sub" style="font-size:12.5px;color:var(--muted)">${grade(f.a.safety)[0]}</div></div></div>
+    <div class="card" style="display:flex;gap:10px;align-items:center">${ring(f.e.score)}<div><b>Ethics</b><div class="sub" style="font-size:12.5px;color:var(--muted)">${(()=>{const u=['cf','vegan','plastic','refill'].filter(k=>p[k]==='unknown').length;return u?u+' not known':'all known'})()}</div></div></div>
+  </div>
+  <div class="card" style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px">
+    <div>Price</div><div><b>${money(p.price)}</b></div>
+    <div>Size</div><div>${p.size?p.size+' '+p.unit:'—'}</div>
+    <div>Per 10 ${p.unit}</div><div><b>${money(f.v)}</b></div>
+    <div>Cruelty-free</div><div>${tri(p.cf)}</div><div>Vegan</div><div>${tri(p.vegan)}</div>
+    <div>Plastic-free pack</div><div>${tri(p.plastic)}</div><div>Refillable</div><div>${tri(p.refill)}</div>
+  </div>
+  ${f.e.warn.map(w=>`<div class="warn">${esc(w)}</div>`).join('')}
+  ${reviewsHTML(p,f)}
+  ${analysisHTML(f.a)}
+  ${p.url?`<p style="margin-top:12px;font-size:14px"><a href="${esc(p.url)}" target="_blank" rel="noopener">View in shop ↗</a></p>`:''}
+  <div class="row" style="margin-top:14px"><button class="btn danger" data-a="del" data-id="${p.id}">Delete</button><button class="btn" data-a="shareprod" data-id="${p.id}">Share</button><span class="spacer"></span><button class="btn" data-a="sel" data-id="${p.id}">${S.compare.includes(p.id)?'Remove from compare':'Add to compare'}</button><button class="btn primary" data-a="edit" data-id="${p.id}">Edit</button></div>`);
+}
+
+function formSheet(id,prefill){
+  const p=id?S.products.find(x=>x.id===id):{name:'',brand:'',category:'',price:'',size:'',unit:'ml',cf:'unknown',vegan:'unknown',plastic:'unknown',refill:'unknown',ing:prefill||'',notes:''};
+  const seg=(k,label)=>`<label class="f">${label}</label><div class="seg" data-seg="${k}">${['yes','no','unknown'].map(v=>`<button type="button" class="${p[k]===v?'on':''}" data-v="${v}">${v==='unknown'?'Not sure':v[0].toUpperCase()+v.slice(1)}</button>`).join('')}</div>`;
+  const catOpts=[...new Set(['Moisturizer','Cleanser','Serum','Sunscreen','Foundation','Concealer','Powder','Blush','Lipstick','Mascara','Eyeliner','Eyeshadow','Nail polish','Hair','Body',...cats()])];
+  openSheet(`<div class="row"><h2 style="flex:1">${id?'Edit':'Add'} product</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <form id="pf">
+    <label class="f">Product name</label><input type="text" name="name" value="${esc(p.name)}" required placeholder="e.g. Hydrating Day Cream">
+    <div class="grid2"><div><label class="f">Brand</label><input type="text" name="brand" value="${esc(p.brand)}"></div>
+    <div><label class="f">Category</label><input type="text" name="category" list="catlist" value="${esc(p.category)}" placeholder="Moisturizer"><datalist id="catlist">${catOpts.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div></div>
+    <div class="grid3"><div><label class="f">Price (${esc(S.currency)})</label><input type="number" step="any" inputmode="decimal" name="price" value="${esc(p.price)}"></div>
+    <div><label class="f">Size</label><input type="number" step="any" inputmode="decimal" name="size" value="${esc(p.size)}"></div>
+    <div><label class="f">Unit</label><select name="unit">${['ml','g','oz'].map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div>
+    <label class="f">Ingredients (paste from the label)</label><textarea name="ing" id="fing" placeholder="Aqua, Glycerin, …">${esc(p.ing)}</textarea>
+    <div id="fprev" class="chips"></div>
+    ${seg('cf','Cruelty-free (e.g. Leaping Bunny certified)')}${seg('vegan','Vegan')}${seg('plastic','Plastic-free packaging')}${seg('refill','Refillable')}
+    <label class="f">Notes</label><input type="text" name="notes" value="${esc(p.notes||'')}" placeholder="Where to buy, how it felt…">
+    <div class="row" style="margin-top:16px"><span class="spacer"></span><button type="button" class="btn" data-a="close">Cancel</button><button class="btn primary" type="submit">Save</button></div>
+  </form>`);
+  const form=document.getElementById('pf');
+  form.querySelectorAll('.seg').forEach(sg=>sg.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b))}));
+  const prev=()=>{const a=analyze(document.getElementById('fing').value);document.getElementById('fprev').innerHTML=a.n?`<span class="chip">${a.n} ingredients</span><span class="chip" style="background:none">Safety ${a.safety}</span>${a.by.high.length?`<span class="chip high">${a.by.high.length} high</span>`:''}${a.by.mod.length?`<span class="chip mod">${a.by.mod.length} moderate</span>`:''}${a.tags.has('animal')?'<span class="chip animal">animal-derived</span>':''}`:''};
+  document.getElementById('fing').addEventListener('input',prev);prev();
+  form.addEventListener('submit',e=>{e.preventDefault();const d=Object.fromEntries(new FormData(form));
+    const get=k=>form.querySelector(`[data-seg="${k}"] .on`)?.dataset.v||'unknown';
+    const rec={...(id?p:{id:uid()}),name:d.name.trim(),brand:d.brand.trim(),category:d.category.trim(),price:d.price===''?null:+d.price,size:d.size===''?null:+d.size,unit:d.unit,ing:d.ing,notes:d.notes,cf:get('cf'),vegan:get('vegan'),plastic:get('plastic'),refill:get('refill')};
+    delete rec.demo;
+    if(id)S.products=S.products.map(x=>x.id===id?rec:x);else S.products.unshift(rec);
+    save();closeSheet();toast(id?'Saved':'Added to your shelf');if(!id&&tab==='scan'){scanText='';go('shelf')}else render();});
+}
+
+function ingSheet(name){
+  const h=hits(name),lv=worst(h);
+  const used=S.products.filter(p=>split(p.ing).some(n=>n.toLowerCase()===name.toLowerCase()));
+  openSheet(`<div class="row"><h2 style="flex:1">${esc(name)}</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <span class="chip ${lv}">${LV_LABEL[lv]}</span>
+  ${h.length?h.map(e=>`<div class="card" style="margin-top:10px"><div style="font-weight:600">${e.n}</div><p style="font-size:14px;margin-top:4px">${e.w}</p>${e.t.filter(t=>ALT[t]).map(t=>`<p class="reason">💡 ${ALT[t]}</p>`).join('')}</div>`).join(''):`<div class="card" style="margin-top:10px;font-size:14px">No known concerns in Shelf Check's list. That usually means it's a common, low-risk ingredient (water, fatty alcohols, plant extracts, thickeners). It doesn't guarantee it suits your skin.</div>`}
+  ${used.length?`<div class="section-title">On your shelf in</div><div class="chips">${used.map(p=>`<button class="chip neutral" data-a="open" data-id="${p.id}">${esc(p.name)}</button>`).join('')}</div>`:''}`);
+}
+
+function settingsSheet(){
+  openSheet(`<div class="row"><h2 style="flex:1">Settings & data</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <label class="f">Currency</label><input type="text" id="cur" value="${esc(S.currency)}" maxlength="5">
+  <div class="section-title">Backup</div>
+  <p style="font-size:14px">Your shelf is saved in this browser only. Copy a backup to move it to another device, or paste one in to restore it.</p>
+  <textarea id="bk" style="margin-top:8px;font-size:12px;font-family:ui-monospace,monospace" placeholder="Paste a backup here to import"></textarea>
+  <div class="row" style="margin-top:8px"><button class="btn small" data-a="export">Show backup</button><button class="btn small" data-a="copybk">Copy</button><span class="spacer"></span><button class="btn small primary" data-a="import">Import</button></div>
+  <div class="section-title">Reset</div>
+  <div class="row"><button class="btn small" data-a="loaddemo">Re-add demo products</button><button class="btn small danger" data-a="wipe">Delete everything</button></div>
+  <p class="note">Scans and links are read by AI on the Shelf Check server; your shelf itself stays on this device. Scores come from a built-in list of ${DB.length} ingredient groups, based on EU cosmetics rules, IARC classifications and common dermatology concerns. Cruelty-free, vegan and packaging details are whatever you enter. Check certifications like Leaping Bunny or the Vegan Society. Not medical advice.</p>`);
+  document.getElementById('cur').addEventListener('change',e=>{S.currency=e.target.value.trim()||'AED';save();render()});
+}
+
+/* ============ SCAN + LINKS (handled by the Shelf Check server) ============ */
+let AI=false;
+fetch('/api/config').then(r=>r.json()).then(j=>{AI=!!j.ai;render();}).catch(()=>{});
+function scanHero(){
+  return `${AI?`<label class="scanhero"><input type="file" class="scanfile" accept="image/*" multiple hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3.2"/></svg>
+    <b>Scan products</b><span>Screenshots from any shop or review site, or photos of the box. Every product, price and review fills in by itself.</span></label>`:''}
+  <form class="linkbox" data-form="link"><input type="url" name="u" placeholder="…or paste a product link" inputmode="url" autocomplete="off"><button class="btn primary" type="submit">Add</button></form>`;
+}
+async function shrink(file){
+  try{
+    const img=await createImageBitmap(file); const k=Math.min(1,1600/Math.max(img.width,img.height));
+    const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    return c.toDataURL('image/jpeg',0.85);
+  }catch(e){ return await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(file)}); }
+}
+const CATS=['Moisturizer','Cleanser','Serum','Toner','Sunscreen','Foundation','Concealer','Powder','Blush','Bronzer','Highlighter','Lipstick','Lip gloss','Mascara','Eyeliner','Eyeshadow','Brow','Primer','Setting spray','Nail polish','Hair','Body','Fragrance','Other'];
+const normKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+function findSame(d){
+  const n=normKey(d.name),b=normKey(d.brand); if(!n) return null;
+  return S.products.find(p=>!p.demo&&normKey(p.name)===n&&(!b||!p.brand||normKey(p.brand)===b))||null;
+}
+async function api(path,body){
+  const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok) throw {code:j.error||'error',message:j.message||'Something went wrong. Try again.'};
+  return j;
+}
+function busy(title,sub,thumbs){
+  openSheet(`<h2>${title}</h2>${thumbs?`<div class="thumbs">${thumbs.map(u=>`<img src="${u}" alt="">`).join('')}</div>`:''}<div class="spin"></div><p class="lede" style="text-align:center">${sub}</p>`);
+}
+function showError(title,msg,withScan){
+  sh.innerHTML=`<div class="grab"></div><h2>${esc(title)}</h2><p class="lede">${esc(msg)}</p><div class="row">${withScan&&AI?`<label class="btn small primary" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Use a screenshot</label>`:''}<span class="spacer"></span><button class="btn" data-a="close">Close</button></div>`;
+  if(!ov.classList.contains('on')) ov.classList.add('on');
+}
+async function runScan(files){
+  files=[...files].slice(0,6); if(!files.length) return;
+  const urls=files.map(f=>URL.createObjectURL(f));
+  busy('Reading your screenshots…','Finding every product, its ingredients and reviews. This takes a few seconds.',urls);
+  try{
+    const images=await Promise.all(files.map(shrink));
+    const {products}=await api('/api/scan',{images});
+    urls.forEach(u=>URL.revokeObjectURL(u));
+    ingest(products);
+  }catch(err){ showError("Scan didn't work",err.message||"Couldn't read those images. Try a clearer screenshot."); }
+}
+async function runLink(url){
+  url=String(url||'').trim(); if(!url) return;
+  busy('Reading the page…','Opening the link and pulling out the products, ingredients and reviews.');
+  try{ const {products}=await api('/api/link',{url}); ingest(products); }
+  catch(err){ showError("Couldn't read that link",(err.message||'')+(err.code==='blocked'||err.code==='no_products'||err.code==='fetch_failed'?' Tip: take a screenshot of the page and scan it instead.':''),true); }
+}
+function ingest(list){
+  const tv=v=>['yes','no','unknown'].includes(v)?v:'unknown';
+  const num=v=>{const n=parseFloat(v);return isFinite(n)&&n>0?n:null};
+  const added=[],updated=[];
+  S.compare=S.compare.filter(cid=>{const q=S.products.find(p=>p.id===cid);return q&&!q.demo});
+  for(const x of list){
+    const rv=x.reviews&&typeof x.reviews==='object'?x.reviews:null;
+    const batch=(num(x.rating)||(rv&&typeof rv.sentiment==='number'))?{at:Date.now(),rating:num(x.rating)&&x.rating<=5?+x.rating:null,count:num(x.review_count)||0,
+      read:rv?(parseInt(rv.read)||0):0,sentiment:rv&&typeof rv.sentiment==='number'?Math.max(0,Math.min(100,rv.sentiment)):(num(x.rating)?x.rating/5*100:null),
+      pros:rv&&Array.isArray(rv.pros)?rv.pros.slice(0,4).map(String):[],cons:rv&&Array.isArray(rv.cons)?rv.cons.slice(0,4).map(String):[],skin:rv&&Array.isArray(rv.skin)?rv.skin.slice(0,3).map(String):[]}:null;
+    const fields={name:String(x.name||'Scanned product').trim(),brand:String(x.brand||'').trim(),category:CATS.includes(x.category)?x.category:'Other',
+      size:num(x.size),unit:['ml','g','oz'].includes(x.unit)?x.unit:'ml',price:num(x.price),ing:String(x.ingredients||''),
+      cf:tv(x.cruelty_free),vegan:tv(x.vegan),plastic:tv(x.plastic_free_packaging),refill:tv(x.refillable),url:/^https?:\/\//.test(x.url||'')?x.url:''};
+    let note=x.unreadable?('Note: '+x.unreadable):'';
+    if(fields.price&&x.currency&&S.currency&&String(x.currency).toUpperCase()!==S.currency.toUpperCase()) note=(note?note+' · ':'')+`Price was in ${x.currency}`;
+    const same=findSame(fields);
+    if(same){
+      for(const k of ['brand','category','size','unit','ing','url']) if(!same[k]&&fields[k]) same[k]=fields[k];
+      if(fields.price) same.price=fields.price;
+      for(const k of ['cf','vegan','plastic','refill']) if((same[k]||'unknown')==='unknown'&&fields[k]!=='unknown') same[k]=fields[k];
+      if(batch&&batch.sentiment!=null){same.reviews=same.reviews||[];same.reviews.push(batch);}
+      updated.push(same);
+    }else{
+      const rec={id:uid(),...fields,notes:note,scanned:true,reviews:batch&&batch.sentiment!=null?[batch]:[]};
+      S.products.unshift(rec); added.push(rec);
+    }
+  }
+  for(const p of [...added,...updated]){ if(!S.compare.includes(p.id)){ if(S.compare.length>=4) S.compare.shift(); S.compare.push(p.id);} }
+  save(); render();
+  const all=[...added,...updated];
+  if(all.length===1) return productSheet(all[0].id,true);
+  sh.innerHTML=`<div class="grab"></div><h2>Found ${all.length} products</h2>
+    <p class="lede">${added.length} added${updated.length?`, ${updated.length} already on your shelf and updated`:''}. Tap one to see its details.</p>
+    <div style="display:grid;gap:8px">${all.map(p=>{const f=full(p);return `<button class="card pcard" data-a="open" data-id="${p.id}"><span class="meta"><span class="name" style="display:block">${esc(p.name)}</span><span class="sub" style="display:block">${esc(p.brand||'')} · ${money(p.price)}</span>${!p.ing?'<span class="reason" style="display:block">No ingredients found yet. Open its own page or scan the back of the box.</span>':''}</span>${ring(f.a.safety,46)}</button>`}).join('')}</div>
+    <div class="row" style="margin-top:14px">${AI?'<label class="btn small" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Scan more</label>':''}<span class="spacer"></span><button class="btn small primary" data-a="gocmp">Compare →</button></div>`;
+}
+/* Share: native share sheet on phones, copy as fallback */
+async function shareText(title,text){
+  const url=location.origin+'/';
+  try{ if(navigator.share){ await navigator.share({title,text,url}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(text+'\n'+url); toast('Copied, ready to paste'); }catch(e){ toast('Sharing not available here'); }
+}
+function compareSummary(){
+  const fs=S.compare.map(id=>S.products.find(p=>p.id===id)).filter(Boolean).map(full);
+  return 'Shelf Check comparison:\n'+fs.map(f=>`• ${f.p.name}${f.p.brand?' ('+f.p.brand+')':''}: safety ${f.a.safety??'—'}/100, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}${f.v?', '+money(f.v)+' per 10'+f.p.unit:''}`).join('\n');
+}
+function productSummary(p){
+  const f=full(p);
+  return `${p.name}${p.brand?' by '+p.brand:''}: safety ${f.a.safety??'—'}/100${f.a.by.high.length?' ('+f.a.by.high.length+' high-concern ingredient'+(f.a.by.high.length>1?'s':'')+')':''}, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}. Checked with Shelf Check.`;
+}
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('[data-form="link"]'); if(!f) return;
+  e.preventDefault(); const v=f.querySelector('input').value; f.querySelector('input').value=''; runLink(v);
+});
+/* Opened from the phone's share sheet (Android, installed app) or with ?url= */
+(function(){
+  try{
+    const q=new URLSearchParams(location.search);
+    const s=[q.get('url'),q.get('text'),q.get('title')].filter(Boolean).join(' ');
+    const m=s.match(/https?:\/\/[^\s]+/);
+    if(m){ history.replaceState(null,'',location.pathname+location.hash); setTimeout(()=>runLink(m[0]),300); }
+  }catch(e){}
+})();
+if('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+function reviewsHTML(p,f){
+  const r=f.r; const my=p.myRating||0;
+  const stars=`<div class="stars">${[1,2,3,4,5].map(i=>`<button data-a="star" data-id="${p.id}" data-v="${i}" class="${i<=my?'on':''}" aria-label="${i} stars">★</button>`).join('')}</div>`;
+  let body='';
+  if(r&&(r.rating!=null||r.sent!=null)){
+    const c=r.score>=75?'var(--good)':r.score>=55?'var(--mod)':'var(--high)';
+    body=`<div class="row"><b style="font-family:Fraunces,serif;font-size:22px;color:${c}">${r.score}</b><span class="sub" style="color:var(--muted);font-size:13px">review score · ${r.rating!=null?'★ '+r.rating.toFixed(1)+(r.count?' from '+r.count.toLocaleString()+' ratings':'')+' · ':''}${r.conf}</span></div>
+    <div class="bar"><i style="width:${r.score}%;background:${c}"></i></div>
+    ${r.pros.length||r.cons.length?`<div class="pc"><div><h4 style="color:var(--good)">People love</h4><ul>${r.pros.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>—</li>'}</ul></div><div><h4 style="color:var(--high)">Complaints</h4><ul>${r.cons.map(x=>`<li>${esc(x)}</li>`).join('')||'<li>—</li>'}</ul></div></div>`:''}
+    ${r.skin.length?`<div class="chips">${r.skin.map(x=>`<span class="chip neutral">${esc(x)}</span>`).join('')}</div>`:''}`;
+  }else body=`<p class="sub" style="color:var(--muted);font-size:13.5px">No reviews yet. Scan a screenshot of this product's reviews from any site and they'll be added here.</p>`;
+  return `<div class="section-title">Reviews</div><div class="card">${body}
+    <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><span style="font-size:13.5px;font-weight:500">My rating</span><span class="spacer"></span>${stars}</div>
+    ${p.notes?`<p style="font-size:13.5px;margin-top:6px;color:var(--muted)">${esc(p.notes)}</p>`:''}</div>`;
+}
+document.addEventListener('change',e=>{ if(e.target.classList&&e.target.classList.contains('scanfile')){ const f=e.target.files; runScan(f); e.target.value=''; } });
+
+/* ============ EVENTS ============ */
+let wipeArmed=false;
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-a],[data-tab]'); if(!t)return;
+  if(t.dataset.tab) return go(t.dataset.tab);
+  const a=t.dataset.a,id=t.dataset.id;
+  switch(a){
+    case 'add':formSheet();break;
+    case 'open':productSheet(id);break;
+    case 'edit':formSheet(id);break;
+    case 'close':closeSheet();break;
+    case 'ing':ingSheet(t.dataset.n);break;
+    case 'sel':{const i=S.compare.indexOf(id);if(i>-1)S.compare.splice(i,1);else{if(S.compare.length>=4){toast('Compare up to 4 at a time');break}S.compare.push(id)}save();render();if(ov.classList.contains('on')&&sh.querySelector('[data-a="del"]'))productSheet(id);break}
+    case 'clearsel':S.compare=[];save();render();break;
+    case 'go':go(t.dataset.t);break;
+    case 'gocmp':closeSheet();go('compare');break;
+    case 'sharecmp':shareText('Shelf Check comparison',compareSummary());break;
+    case 'shareprod':{const p=S.products.find(x=>x.id===id);if(p)shareText(p.name,productSummary(p));break}
+    case 'star':{const p=S.products.find(x=>x.id===id);if(p){p.myRating=(p.myRating===+t.dataset.v)?0:+t.dataset.v;save();render();productSheet(id)}break}
+    case 'sf':shelfFilter=t.dataset.c;render();break;
+    case 'del':S.products=S.products.filter(p=>p.id!==id);S.compare=S.compare.filter(x=>x!==id);save();closeSheet();render();toast('Deleted');break;
+    case 'cleardemo':{const ids=S.products.filter(p=>p.demo).map(p=>p.id);S.products=S.products.filter(p=>!p.demo);S.compare=S.compare.filter(x=>!ids.includes(x));save();render();toast('Demo products removed');break}
+    case 'loaddemo':S.products=[...S.products.filter(p=>!p.demo),...demo.map(p=>({...p,id:uid(),demo:true}))];save();render();toast('Demo products added');break;
+    case 'wipe':if(!wipeArmed){wipeArmed=true;t.textContent='Tap again to confirm';setTimeout(()=>{wipeArmed=false;t.textContent='Delete everything'},3000);break}S.products=[];S.compare=[];save();closeSheet();render();toast('Everything deleted');break;
+    case 'export':document.getElementById('bk').value=JSON.stringify({v:1,currency:S.currency,products:S.products});break;
+    case 'copybk':{const v=document.getElementById('bk');if(!v.value)v.value=JSON.stringify({v:1,currency:S.currency,products:S.products});navigator.clipboard?.writeText(v.value).then(()=>toast('Copied'),()=>{v.select();toast('Select all and copy')});break}
+    case 'import':try{const d=JSON.parse(document.getElementById('bk').value);if(!Array.isArray(d.products))throw 0;const have=new Set(S.products.map(p=>p.id));d.products.forEach(p=>{if(!p.id||have.has(p.id))p.id=uid();S.products.push(p)});if(d.currency)S.currency=d.currency;save();closeSheet();render();toast(`Imported ${d.products.length} products`)}catch(err){toast("That backup couldn't be read")}break;
+    case 'settings':settingsSheet();break;
+    case 'scanclear':scanText='';renderScan();break;
+    case 'scansave':formSheet(null,scanText);break;
+    case 'pref':S.prefs[t.dataset.k]=!S.prefs[t.dataset.k];save();renderSuggest();break;
+    case 'mode':S.prefs.mode=t.dataset.k;save();renderSuggest();break;
+  }
+});
+document.addEventListener('change',e=>{const t=e.target;if(t.dataset.a==='prefsel'){S.prefs[t.dataset.k]=t.value;save();renderSuggest()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+function go(t){tab=t;try{if(location.hash!=='#'+t)history.replaceState(null,'','#'+t)}catch(e){}render();window.scrollTo(0,0)}
+function render(){
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+tab));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  ({shelf:renderShelf,compare:renderCompare,scan:renderScan,suggest:renderSuggest})[tab]();
+}
+window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(['shelf','compare','scan','suggest'].includes(h)&&h!==tab){tab=h;render()}});
+load();
+{const h=location.hash.slice(1);if(['shelf','compare','scan','suggest'].includes(h))tab=h;}
+render();
+</script>
+</body>
+</html>
