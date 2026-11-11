@@ -136,6 +136,13 @@ a{color:var(--rose)}
 .pc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .pc ul{padding-left:16px;font-size:13.5px;display:grid;gap:3px}
 .pc h4{font-size:12.5px;font-family:Inter;font-weight:600;margin-bottom:4px}
+@media print{
+  header .iconbtn,nav,.overlay,.toast,.btn,.selbox,.scanhero,.linkbox{display:none!important}
+  body,html{background:#fff}main{padding:0;max-width:none}
+  .view{display:none!important}#v-compare{display:block!important}
+  .cmp-wrap{overflow:visible;border:0}.cmp th.rl{position:static}
+  .card{break-inside:avoid}
+}
 </style>
 </head>
 <body>
@@ -600,9 +607,15 @@ function settingsSheet(){
   <label class="f">Show prices in</label><select id="cur">${[...new Set([S.currency,...CUR_LIST])].map(c=>`<option ${c===S.currency?'selected':''}>${esc(c)}</option>`).join('')}</select>
   <p class="note" style="margin-top:6px">Picked automatically from your location. Prices in other currencies are converted. <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates by Exchange Rate API</a></p>
   <div class="section-title">Backup</div>
-  <p style="font-size:14px">Your shelf is saved in this browser only. Copy a backup to move it to another device, or paste one in to restore it.</p>
+  <p style="font-size:14px">Your shelf is saved in this browser only. Save a backup file to your phone or computer, and restore it any time, on any device.</p>
+  <div style="display:grid;gap:8px;margin-top:10px">
+    <button class="btn primary" data-a="bk-download">⬇️ Download backup file</button>
+    ${navigator.share?'<button class="btn" data-a="bk-share">📤 Save to Files / send backup</button>':''}
+    <label class="btn" style="text-align:center;cursor:pointer"><input type="file" class="restorefile" accept=".json,application/json" hidden>⬆️ Restore from a backup file</label>
+  </div>
+  <details style="margin-top:10px"><summary class="sub" style="color:var(--muted);font-size:13px;cursor:pointer">Copy and paste instead</summary>
   <textarea id="bk" style="margin-top:8px;font-size:12px;font-family:ui-monospace,monospace" placeholder="Paste a backup here to import"></textarea>
-  <div class="row" style="margin-top:8px"><button class="btn small" data-a="export">Show backup</button><button class="btn small" data-a="copybk">Copy</button><span class="spacer"></span><button class="btn small primary" data-a="import">Import</button></div>
+  <div class="row" style="margin-top:8px"><button class="btn small" data-a="export">Show backup</button><button class="btn small" data-a="copybk">Copy</button><span class="spacer"></span><button class="btn small primary" data-a="import">Import</button></div></details>
   <div class="section-title">Reset</div>
   <div class="row"><button class="btn small" data-a="loaddemo">Re-add demo products</button><button class="btn small danger" data-a="wipe">Delete everything</button></div>
   <p class="note">Scans and links are read by AI on the Shelf Check server; your shelf itself stays on this device. Scores come from a built-in list of ${DB.length} ingredient groups, based on EU cosmetics rules, IARC classifications and common dermatology concerns. Cruelty-free, vegan and packaging details are whatever you enter. Check certifications like Leaping Bunny or the Vegan Society. Not medical advice.</p>`);
@@ -742,6 +755,124 @@ function reviewsHTML(p,f){
 }
 document.addEventListener('change',e=>{ if(e.target.classList&&e.target.classList.contains('scanfile')){ const f=e.target.files; runScan(f); e.target.value=''; } });
 
+/* ============ PORTABLE: backup files, share links, share images, PDF ============ */
+const SHARE_FIELDS=['name','brand','category','price','cur','size','unit','ing','cf','vegan','plastic','refill','reviews','url'];
+const slim=p=>{const o={};SHARE_FIELDS.forEach(k=>{if(p[k]!=null&&p[k]!==''&&!(Array.isArray(p[k])&&!p[k].length))o[k]=p[k]});return o};
+const b64u={enc:u8=>{let s='';for(let i=0;i<u8.length;i+=0x8000)s+=String.fromCharCode.apply(null,u8.subarray(i,i+0x8000));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')},
+  dec:t=>{t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';const s=atob(t);const u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u}};
+async function packShare(products){
+  const json=new TextEncoder().encode(JSON.stringify({v:1,cur:S.currency,p:products.map(slim)}));
+  if(typeof CompressionStream==='function'){
+    const out=new Uint8Array(await new Response(new Blob([json]).stream().pipeThrough(new CompressionStream('deflate-raw'))).arrayBuffer());
+    return 'z'+b64u.enc(out);
+  }
+  return 'j'+b64u.enc(json);
+}
+async function unpackShare(t){
+  const kind=t[0],data=b64u.dec(t.slice(1));
+  let bytes=data;
+  if(kind==='z') bytes=new Uint8Array(await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+async function shareLink(products){ return location.origin+'/#s='+await packShare(products); }
+const cmpProducts=()=>S.compare.map(id=>S.products.find(p=>p.id===id)).filter(Boolean);
+
+function shareSheet(kind,id){
+  const list=kind==='cmp'?cmpProducts():[S.products.find(p=>p.id===id)].filter(Boolean);
+  if(!list.length) return toast('Nothing to share yet');
+  openSheet(`<div class="row"><h2 style="flex:1">Share ${list.length>1?'comparison':'product'}</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <p class="lede">${list.map(p=>esc(p.name)).join(' · ')}</p>
+  <div style="display:grid;gap:8px">
+    <button class="card pcard" data-a="sh-link" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🔗</span><span class="meta"><span class="name" style="display:block">Send a link</span><span class="sub" style="display:block">Opens these results on any phone. They can add them to their own shelf.</span></span></button>
+    <button class="card pcard" data-a="sh-img" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🖼️</span><span class="meta"><span class="name" style="display:block">Share as image</span><span class="sub" style="display:block">A picture of the scores for WhatsApp, Instagram or your photos.</span></span></button>
+    ${kind==='cmp'?`<button class="card pcard" data-a="sh-pdf"><span style="font-size:22px">📄</span><span class="meta"><span class="name" style="display:block">Save as PDF / print</span><span class="sub" style="display:block">Keep the full comparison table as a file.</span></span></button>`:''}
+    <button class="card pcard" data-a="sh-text" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">💬</span><span class="meta"><span class="name" style="display:block">Share as text</span><span class="sub" style="display:block">A short summary you can paste anywhere.</span></span></button>
+  </div>`);
+}
+async function shareOrCopy(title,text,url){
+  try{ if(navigator.share){ await navigator.share({title,text,url}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(url?text+'\n'+url:text); toast('Link copied, ready to paste'); }catch(e){ prompt('Copy this link',url||text); }
+}
+function saveFile(blob,name){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+}
+async function shareFile(blob,name,title){
+  const file=new File([blob],name,{type:blob.type});
+  try{ if(navigator.canShare&&navigator.canShare({files:[file]})){ await navigator.share({files:[file],title}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  saveFile(blob,name); toast('Saved to your downloads');
+}
+/* Image card drawn on a canvas */
+function wrapText(ctx,text,maxW){const words=String(text).split(' ');const lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w}else line=t}if(line)lines.push(line);return lines}
+async function shareImage(list){
+  const fs=list.map(full); const W=1080,pad=64,rowH=250;
+  const nV=fs.length>1?(2+(fs.some(f=>f.r)?1:0)+(fs.some(f=>f.v)?1:0)):0;
+  const H=180+60+fs.length*rowH+(nV?70+nV*42:0)+90;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  x.fillStyle='#faf6f2'; x.fillRect(0,0,W,H);
+  x.fillStyle='#a8475e'; x.fillRect(0,0,W,180);
+  x.fillStyle='#fff'; x.font='700 60px Georgia, serif'; x.fillText('Shelf Check',pad,100);
+  x.font='400 30px system-ui, sans-serif'; x.fillText(fs.length>1?`Comparing ${fs.length} products`:'Product check',pad,148);
+  const col=s=>s==null?'#8a8a8a':s>=80?'#2a7454':s>=60?'#5f8f3a':s>=40?'#a86a08':'#b83227';
+  let y=180+60+50;
+  const plain=p=>{if(!(p.price>0))return '';const v=priceOf(p);return v!=null?`${S.currency} ${fmtNum(v)}`:`${p.cur||S.currency} ${fmtNum(p.price)}`};
+  fs.forEach((f,i)=>{
+    x.fillStyle='#fff'; x.strokeStyle='#ece2da'; x.lineWidth=2; x.beginPath(); x.roundRect(pad-16,y-50,W-2*pad+32,rowH-24,28); x.fill(); x.stroke();
+    x.fillStyle='#2b2320'; x.font='700 38px system-ui, sans-serif';
+    const nl=wrapText(x,f.p.name,W-2*pad-20).slice(0,1); x.fillText(nl[0]+(wrapText(x,f.p.name,W-2*pad-20).length>1?'…':''),pad+8,y+6);
+    x.fillStyle='#7d706a'; x.font='400 27px system-ui, sans-serif';
+    x.fillText([f.p.brand,plain(f.p),f.v?`${S.currency} ${fmtNum(f.v)}/10${f.p.unit}`:''].filter(Boolean).join('  ·  '),pad+8,y+48);
+    const pills=[['Safety',f.a.safety],['Ethics',f.e.score],['Reviews',f.r?f.r.score:null]];
+    pills.forEach(([lab,v],k)=>{const px=pad+8+k*300,py=y+82;
+      x.fillStyle=col(v); x.beginPath(); x.arc(px+40,py+40,40,0,Math.PI*2); x.fill();
+      x.fillStyle='#fff'; x.font='700 32px system-ui, sans-serif'; x.textAlign='center'; x.fillText(v==null?'—':String(v),px+40,py+51); x.textAlign='left';
+      x.fillStyle='#2b2320'; x.font='600 28px system-ui, sans-serif'; x.fillText(lab,px+96,py+50);});
+    y+=rowH;
+  });
+  if(fs.length>1){
+    const best=(fn)=>fs.reduce((a,b)=>(fn(b)??-1)>(fn(a)??-1)?b:a);
+    const lines=[['Safest',best(f=>f.a.safety).p.name],['Most ethical',best(f=>f.e.score).p.name]];
+    const rv=fs.filter(f=>f.r); if(rv.length) lines.push(['Best reviewed',best(f=>f.r?f.r.score:null).p.name]);
+    const cheap=fs.filter(f=>f.v).sort((a,b)=>a.v-b.v)[0]; if(cheap) lines.push(['Best value',cheap.p.name]);
+    y+=10; x.fillStyle='#2b2320'; x.font='700 34px Georgia, serif'; x.fillText('Verdict',pad,y-6);
+    lines.forEach(([k,v],i)=>{x.font='600 28px system-ui, sans-serif';x.fillStyle='#a8475e';x.fillText(k,pad,y+42+i*42);x.fillStyle='#2b2320';x.font='400 28px system-ui, sans-serif';x.fillText(v.length>42?v.slice(0,40)+'…':v,pad+230,y+42+i*42)});
+  }
+  x.fillStyle='#7d706a'; x.font='400 24px system-ui, sans-serif'; x.fillText('Check your own products at '+location.host,pad,H-50);
+  const blob=await new Promise(r=>c.toBlob(r,'image/png'));
+  await shareFile(blob,'shelf-check-comparison.png','Shelf Check');
+}
+/* Opening a shared link */
+async function openShared(code){
+  let d; try{ d=await unpackShare(code); }catch(e){ return toast('That share link looks broken'); }
+  const list=(d.p||[]).map(p=>({...p,id:'sh_'+uid()}));
+  if(!list.length) return;
+  window.__shared=list;
+  const fs=list.map(full);
+  openSheet(`<div class="row"><h2 style="flex:1">Shared with you</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <p class="lede">${list.length>1?`A comparison of ${list.length} products`:'A product check'} from Shelf Check.</p>
+  <div style="display:grid;gap:8px">${fs.map(f=>`<div class="card pcard"><span class="meta"><span class="name" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${priceLabel(f.p)}</span><span class="chips">${flagChips(f)}</span></span>${ring(f.a.safety,46)}</div>`).join('')}</div>
+  <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn primary" data-a="sh-addall">Add to my shelf & compare</button></div>`);
+}
+function addShared(){
+  const list=window.__shared||[]; const ids=[];
+  list.forEach(p=>{const same=findSame(p); if(same){ids.push(same.id);return} const rec={...p,id:uid()}; S.products.unshift(rec); ids.push(rec.id);});
+  S.compare=ids.slice(0,4); save(); closeSheet(); go('compare'); toast('Added to your shelf');
+}
+/* Backup files */
+function backupData(){ return JSON.stringify({app:'shelf-check',v:1,saved:new Date().toISOString(),currency:S.currency,products:S.products},null,1); }
+function importBackup(text){
+  const d=JSON.parse(text); if(!Array.isArray(d.products)) throw 0;
+  const have=new Set(S.products.map(p=>p.id)); let n=0;
+  d.products.forEach(p=>{ if(have.has(p.id)) return; if(!p.id) p.id=uid(); S.products.push(p); n++; });
+  save(); render(); return n;
+}
+document.addEventListener('change',e=>{
+  if(!e.target.classList||!e.target.classList.contains('restorefile')) return;
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  f.text().then(t=>{ const n=importBackup(t); closeSheet(); toast(`Restored ${n} product${n===1?'':'s'}`); }).catch(()=>toast("That file couldn't be read"));
+  e.target.value='';
+});
+
 /* ============ EVENTS ============ */
 let wipeArmed=false;
 document.addEventListener('click',e=>{
@@ -758,8 +889,15 @@ document.addEventListener('click',e=>{
     case 'clearsel':S.compare=[];save();render();break;
     case 'go':go(t.dataset.t);break;
     case 'gocmp':closeSheet();go('compare');break;
-    case 'sharecmp':shareText('Shelf Check comparison',compareSummary());break;
-    case 'shareprod':{const p=S.products.find(x=>x.id===id);if(p)shareText(p.name,productSummary(p));break}
+    case 'sharecmp':shareSheet('cmp');break;
+    case 'shareprod':shareSheet('one',id);break;
+    case 'sh-link':{const list=t.dataset.k==='cmp'?cmpProducts():[S.products.find(p=>p.id===t.dataset.id)].filter(Boolean);shareLink(list).then(u=>shareOrCopy('Shelf Check',list.length>1?'Compare these products on Shelf Check':'Check this product on Shelf Check',u));break}
+    case 'sh-img':{const list=t.dataset.k==='cmp'?cmpProducts():[S.products.find(p=>p.id===t.dataset.id)].filter(Boolean);toast('Making the image…');shareImage(list).catch(()=>toast("Couldn't make the image"));break}
+    case 'sh-pdf':closeSheet();go('compare');setTimeout(()=>window.print(),300);break;
+    case 'sh-text':{const p=S.products.find(x=>x.id===t.dataset.id);shareText('Shelf Check',t.dataset.k==='cmp'?compareSummary():productSummary(p));break}
+    case 'sh-addall':addShared();break;
+    case 'bk-download':saveFile(new Blob([backupData()],{type:'application/json'}),`shelf-check-backup-${new Date().toISOString().slice(0,10)}.json`);toast('Backup saved to your downloads');break;
+    case 'bk-share':shareFile(new Blob([backupData()],{type:'application/json'}),`shelf-check-backup-${new Date().toISOString().slice(0,10)}.json`,'Shelf Check backup');break;
     case 'star':{const p=S.products.find(x=>x.id===id);if(p){p.myRating=(p.myRating===+t.dataset.v)?0:+t.dataset.v;save();render();productSheet(id)}break}
     case 'sf':shelfFilter=t.dataset.c;render();break;
     case 'del':S.products=S.products.filter(p=>p.id!==id);S.compare=S.compare.filter(x=>x!==id);save();closeSheet();render();toast('Deleted');break;
@@ -785,9 +923,9 @@ function render(){
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
   ({shelf:renderShelf,compare:renderCompare,scan:renderScan,suggest:renderSuggest})[tab]();
 }
-window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if(['shelf','compare','scan','suggest'].includes(h)&&h!==tab){tab=h;render()}});
+window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#s=')){const c=location.hash.slice(3);history.replaceState(null,'',location.pathname+'#'+tab);openShared(c);return}const h=location.hash.slice(1);if(['shelf','compare','scan','suggest'].includes(h)&&h!==tab){tab=h;render()}});
 load();
-{const h=location.hash.slice(1);if(['shelf','compare','scan','suggest'].includes(h))tab=h;}
+{const h=location.hash.slice(1);if(h.startsWith('s=')){const c=h.slice(2);history.replaceState(null,'',location.pathname);setTimeout(()=>openShared(c),200);}else if(['shelf','compare','scan','suggest'].includes(h))tab=h;}
 render();
 </script>
 </body>
