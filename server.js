@@ -279,6 +279,22 @@ app.get('/api/status', async (req, res) => {
   if (ANTHROPIC_KEY) { try { await callAnthropic('Reply with exactly {"ok":true}', []); out.anthropic = 'ok'; } catch (e) { out.anthropic = e.message.slice(0, 300); } }
   res.json(out);
 });
+// Exchange rates (USD base), cached for 12 hours. Free source: open.er-api.com (attribution shown in the app).
+let rateCache = null;
+app.get('/api/rates', async (req, res) => {
+  try {
+    if (!rateCache || Date.now() - rateCache.at > 12 * 3600e3) {
+      const r = await fetch(env.RATES_URL || 'https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(10000) });
+      const j = await r.json();
+      if (!r.ok || !j.rates) throw new Error('rates unavailable');
+      rateCache = { at: Date.now(), rates: j.rates, updated: j.time_last_update_utc || null };
+    }
+    res.set('cache-control', 'public, max-age=3600').json({ base: 'USD', rates: rateCache.rates, updated: rateCache.updated });
+  } catch (e) {
+    if (rateCache) return res.json({ base: 'USD', rates: rateCache.rates, updated: rateCache.updated, stale: true });
+    res.status(503).json({ error: 'rates_unavailable' });
+  }
+});
 app.get('/healthz', (req, res) => res.send('ok'));
 
 function fail(res, e) {
