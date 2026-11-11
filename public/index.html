@@ -377,7 +377,7 @@ function renderShelf(){
   const items=S.products.filter(p=>shelfFilter==='All'||p.category===shelfFilter).map(full);
   const hasDemo=S.products.some(p=>p.demo);
   el.innerHTML=`
-  <div class="row"><h2 style="font-size:24px">My shelf</h2><span class="spacer"></span><button class="btn primary" data-a="add">+ Add product</button></div>
+  <div class="row"><h2 style="font-size:24px">My shelf</h2><span class="spacer"></span><button class="btn" data-a="shareall">Share</button><button class="btn primary" data-a="add">+ Add</button></div>
   <p class="lede">Tap a product for the full ingredient breakdown. Tick the boxes to compare.</p>
   ${scanHero()}
   ${cats().length>1?`<div class="chips" style="margin-bottom:12px">${['All',...cats()].map(c=>`<button class="chip ${c===shelfFilter?'rose':'neutral'}" data-a="sf" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:''}
@@ -720,6 +720,9 @@ function compareSummary(){
   const fs=S.compare.map(id=>S.products.find(p=>p.id===id)).filter(Boolean).map(full);
   return 'Shelf Check comparison:\n'+fs.map(f=>`• ${f.p.name}${f.p.brand?' ('+f.p.brand+')':''}: safety ${f.a.safety??'—'}/100, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}${f.v?', '+money(f.v)+' per 10'+f.p.unit:''}`).join('\n');
 }
+function listSummary(list,title){
+  return title+':\n'+list.map(full).map(f=>`• ${f.p.name}${f.p.brand?' ('+f.p.brand+')':''}: safety ${f.a.safety??'—'}/100, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}`).join('\n');
+}
 function productSummary(p){
   const f=full(p);
   return `${p.name}${p.brand?' by '+p.brand:''}: safety ${f.a.safety??'—'}/100${f.a.by.high.length?' ('+f.a.by.high.length+' high-concern ingredient'+(f.a.by.high.length>1?'s':'')+')':''}, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}. Checked with Shelf Check.`;
@@ -776,12 +779,17 @@ async function unpackShare(t){
 }
 async function shareLink(products){ return location.origin+'/#s='+await packShare(products); }
 const cmpProducts=()=>S.compare.map(id=>S.products.find(p=>p.id===id)).filter(Boolean);
+function listFor(kind,id){
+  if(kind==='cmp') return cmpProducts();
+  if(kind==='all'){ const mine=S.products.filter(p=>!p.demo); return mine.length?mine:S.products.slice(); }
+  return [S.products.find(p=>p.id===id)].filter(Boolean);
+}
 
 function shareSheet(kind,id){
-  const list=kind==='cmp'?cmpProducts():[S.products.find(p=>p.id===id)].filter(Boolean);
+  const list=listFor(kind,id);
   if(!list.length) return toast('Nothing to share yet');
-  openSheet(`<div class="row"><h2 style="flex:1">Share ${list.length>1?'comparison':'product'}</h2><button class="iconbtn" data-a="close">✕</button></div>
-  <p class="lede">${list.map(p=>esc(p.name)).join(' · ')}</p>
+  openSheet(`<div class="row"><h2 style="flex:1">Share ${kind==='all'?'my shelf':list.length>1?'comparison':'product'}</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <p class="lede">${kind==='all'?`All ${list.length} product${list.length===1?'':'s'} on your shelf`:list.map(p=>esc(p.name)).join(' · ')}</p>
   <div style="display:grid;gap:8px">
     <button class="card pcard" data-a="sh-link" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🔗</span><span class="meta"><span class="name" style="display:block">Send a link</span><span class="sub" style="display:block">Opens these results on any phone. They can add them to their own shelf.</span></span></button>
     <button class="card pcard" data-a="sh-img" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🖼️</span><span class="meta"><span class="name" style="display:block">Share as image</span><span class="sub" style="display:block">A picture of the scores for WhatsApp, Instagram or your photos.</span></span></button>
@@ -805,14 +813,14 @@ async function shareFile(blob,name,title){
 /* Image card drawn on a canvas */
 function wrapText(ctx,text,maxW){const words=String(text).split(' ');const lines=[];let line='';for(const w of words){const t=line?line+' '+w:w;if(ctx.measureText(t).width>maxW&&line){lines.push(line);line=w}else line=t}if(line)lines.push(line);return lines}
 async function shareImage(list){
-  const fs=list.map(full); const W=1080,pad=64,rowH=250;
+  const more=Math.max(0,list.length-12); const fs=list.slice(0,12).map(full); const W=1080,pad=64,rowH=250;
   const nV=fs.length>1?(2+(fs.some(f=>f.r)?1:0)+(fs.some(f=>f.v)?1:0)):0;
-  const H=180+60+fs.length*rowH+(nV?70+nV*42:0)+90;
+  const H=180+60+fs.length*rowH+(nV?70+nV*42:0)+90+(more?50:0);
   const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   x.fillStyle='#faf6f2'; x.fillRect(0,0,W,H);
   x.fillStyle='#a8475e'; x.fillRect(0,0,W,180);
   x.fillStyle='#fff'; x.font='700 60px Georgia, serif'; x.fillText('Shelf Check',pad,100);
-  x.font='400 30px system-ui, sans-serif'; x.fillText(fs.length>1?`Comparing ${fs.length} products`:'Product check',pad,148);
+  x.font='400 30px system-ui, sans-serif'; x.fillText(list.length>4?`My shelf · ${list.length} products`:fs.length>1?`Comparing ${fs.length} products`:'Product check',pad,148);
   const col=s=>s==null?'#8a8a8a':s>=80?'#2a7454':s>=60?'#5f8f3a':s>=40?'#a86a08':'#b83227';
   let y=180+60+50;
   const plain=p=>{if(!(p.price>0))return '';const v=priceOf(p);return v!=null?`${S.currency} ${fmtNum(v)}`:`${p.cur||S.currency} ${fmtNum(p.price)}`};
@@ -829,6 +837,7 @@ async function shareImage(list){
       x.fillStyle='#2b2320'; x.font='600 28px system-ui, sans-serif'; x.fillText(lab,px+96,py+50);});
     y+=rowH;
   });
+  if(more){ x.fillStyle='#7d706a'; x.font='600 28px system-ui, sans-serif'; x.fillText(`+ ${more} more on the shared link`,pad,y-10); y+=50; }
   if(fs.length>1){
     const best=(fn)=>fs.reduce((a,b)=>(fn(b)??-1)>(fn(a)??-1)?b:a);
     const lines=[['Safest',best(f=>f.a.safety).p.name],['Most ethical',best(f=>f.e.score).p.name]];
@@ -849,14 +858,14 @@ async function openShared(code){
   window.__shared=list;
   const fs=list.map(full);
   openSheet(`<div class="row"><h2 style="flex:1">Shared with you</h2><button class="iconbtn" data-a="close">✕</button></div>
-  <p class="lede">${list.length>1?`A comparison of ${list.length} products`:'A product check'} from Shelf Check.</p>
+  <p class="lede">${list.length>4?`A list of ${list.length} products`:list.length>1?`A comparison of ${list.length} products`:'A product check'} from Shelf Check.</p>
   <div style="display:grid;gap:8px">${fs.map(f=>`<div class="card pcard"><span class="meta"><span class="name" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${priceLabel(f.p)}</span><span class="chips">${flagChips(f)}</span></span>${ring(f.a.safety,46)}</div>`).join('')}</div>
-  <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn primary" data-a="sh-addall">Add to my shelf & compare</button></div>`);
+  <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn primary" data-a="sh-addall">${list.length>4?`Add all ${list.length} to my shelf`:'Add to my shelf & compare'}</button></div>`);
 }
 function addShared(){
   const list=window.__shared||[]; const ids=[];
   list.forEach(p=>{const same=findSame(p); if(same){ids.push(same.id);return} const rec={...p,id:uid()}; S.products.unshift(rec); ids.push(rec.id);});
-  S.compare=ids.slice(0,4); save(); closeSheet(); go('compare'); toast('Added to your shelf');
+  S.compare=ids.slice(0,4); save(); closeSheet(); go(ids.length>4?'shelf':'compare'); toast(`Added ${ids.length} product${ids.length===1?'':'s'} to your shelf`);
 }
 /* Backup files */
 function backupData(){ return JSON.stringify({app:'shelf-check',v:1,saved:new Date().toISOString(),currency:S.currency,products:S.products},null,1); }
@@ -890,11 +899,12 @@ document.addEventListener('click',e=>{
     case 'go':go(t.dataset.t);break;
     case 'gocmp':closeSheet();go('compare');break;
     case 'sharecmp':shareSheet('cmp');break;
+    case 'shareall':shareSheet('all');break;
     case 'shareprod':shareSheet('one',id);break;
-    case 'sh-link':{const list=t.dataset.k==='cmp'?cmpProducts():[S.products.find(p=>p.id===t.dataset.id)].filter(Boolean);shareLink(list).then(u=>shareOrCopy('Shelf Check',list.length>1?'Compare these products on Shelf Check':'Check this product on Shelf Check',u));break}
-    case 'sh-img':{const list=t.dataset.k==='cmp'?cmpProducts():[S.products.find(p=>p.id===t.dataset.id)].filter(Boolean);toast('Making the image…');shareImage(list).catch(()=>toast("Couldn't make the image"));break}
+    case 'sh-link':{const k=t.dataset.k,list=listFor(k,t.dataset.id);shareLink(list).then(u=>shareOrCopy('Shelf Check',k==='all'?`My beauty shelf on Shelf Check (${list.length} products)`:list.length>1?'Compare these products on Shelf Check':'Check this product on Shelf Check',u));break}
+    case 'sh-img':{const list=listFor(t.dataset.k,t.dataset.id);toast('Making the image…');shareImage(list).catch(()=>toast("Couldn't make the image"));break}
     case 'sh-pdf':closeSheet();go('compare');setTimeout(()=>window.print(),300);break;
-    case 'sh-text':{const p=S.products.find(x=>x.id===t.dataset.id);shareText('Shelf Check',t.dataset.k==='cmp'?compareSummary():productSummary(p));break}
+    case 'sh-text':{const k=t.dataset.k;shareText('Shelf Check',k==='one'?productSummary(S.products.find(x=>x.id===t.dataset.id)):listSummary(listFor(k),k==='all'?'My Shelf Check list':'Shelf Check comparison'));break}
     case 'sh-addall':addShared();break;
     case 'bk-download':saveFile(new Blob([backupData()],{type:'application/json'}),`shelf-check-backup-${new Date().toISOString().slice(0,10)}.json`);toast('Backup saved to your downloads');break;
     case 'bk-share':shareFile(new Blob([backupData()],{type:'application/json'}),`shelf-check-backup-${new Date().toISOString().slice(0,10)}.json`,'Shelf Check backup');break;
