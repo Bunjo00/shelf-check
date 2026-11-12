@@ -263,7 +263,15 @@ app.set('trust proxy', true);
 app.disable('x-powered-by');
 app.use(express.json({ limit: '30mb' }));
 app.use((req, res, next) => {
-  res.set({ 'x-content-type-options': 'nosniff', 'referrer-policy': 'strict-origin-when-cross-origin' });
+  res.set({
+    'x-content-type-options': 'nosniff',
+    'referrer-policy': 'strict-origin-when-cross-origin',
+    'x-frame-options': 'DENY',
+    'permissions-policy': 'geolocation=(), camera=(), microphone=(), payment=()',
+    // The page may only talk to this server: even if something slipped through, data can't be sent elsewhere.
+    'content-security-policy': "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'; object-src 'none'",
+  });
+  if (req.secure || req.headers['x-forwarded-proto'] === 'https') res.set('strict-transport-security', 'max-age=31536000');
   next();
 });
 

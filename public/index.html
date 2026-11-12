@@ -262,7 +262,7 @@ let S={products:[],compare:[],currency:detectCurrency(),prefs:{cf:true,vegan:fal
 let tab='shelf', scanText='';
 const uid=()=>Math.random().toString(36).slice(2,10);
 function load(){
-  try{const raw=localStorage.getItem(KEY); if(raw){const d=JSON.parse(raw); S={...S,...d,prefs:{...S.prefs,...(d.prefs||{})}}; S.products.forEach(p=>{if(!p.cur)p.cur=p.demo?'AED':S.currency}); return;}}catch(e){}
+  try{const raw=localStorage.getItem(KEY); if(raw){const d=JSON.parse(raw); S={...S,...d,prefs:{...S.prefs,...(d.prefs||{})}}; S.products.forEach(p=>{if(!p.cur)p.cur=p.demo?'AED':S.currency}); S.products=cleanList(S.products); S.compare=(Array.isArray(S.compare)?S.compare:[]).filter(id=>S.products.some(p=>p.id===id)).slice(0,4); if(!/^[A-Z]{3}$/.test(S.currency))S.currency=detectCurrency(); return;}}catch(e){}
   S.products=demo.map(p=>({...p,cur:'AED',id:uid(),demo:true}));
   S.compare=S.products.filter(p=>p.category==='Moisturizer').map(p=>p.id);
 }
@@ -301,6 +301,33 @@ function ethics(p,a){
   if(a.n&&!a.tags.has('microplastic')&&!a.tags.has('pfas'))s+=10;
   return {score:s,unk,warn};
 }
+/* ---- safety: every product from share links, backups, scans or old data is cleaned here ---- */
+const TRI=v=>['yes','no','unknown'].includes(v)?v:'unknown';
+const STR=(v,max)=>typeof v==='string'?v.slice(0,max):(typeof v==='number'?String(v).slice(0,max):'');
+const NUM=(v,max)=>{const n=typeof v==='number'?v:parseFloat(v);return isFinite(n)&&n>0&&n<=max?Math.round(n*1000)/1000:null};
+const SAFEURL=v=>{try{const u=new URL(String(v));return (u.protocol==='https:'||u.protocol==='http:')?u.href.slice(0,2000):''}catch(e){return ''}};
+function cleanProduct(p){
+  if(!p||typeof p!=='object') return null;
+  const rv=Array.isArray(p.reviews)?p.reviews.slice(0,50).map(b=>b&&typeof b==='object'?{
+    at:NUM(b.at,1e14)||Date.now(),rating:NUM(b.rating,5),count:Math.floor(NUM(b.count,1e9)||0),read:Math.floor(NUM(b.read,1e6)||0),
+    sentiment:typeof b.sentiment==='number'&&isFinite(b.sentiment)?Math.max(0,Math.min(100,b.sentiment)):null,
+    pros:(Array.isArray(b.pros)?b.pros:[]).slice(0,6).map(x=>STR(x,120)).filter(Boolean),
+    cons:(Array.isArray(b.cons)?b.cons:[]).slice(0,6).map(x=>STR(x,120)).filter(Boolean),
+    skin:(Array.isArray(b.skin)?b.skin:[]).slice(0,4).map(x=>STR(x,120)).filter(Boolean)}:null).filter(b=>b&&b.sentiment!=null):[];
+  const c={
+    id:/^[a-z0-9_]{1,40}$/i.test(String(p.id||''))?String(p.id):uid(),
+    name:STR(p.name,200).trim()||'Unnamed product', brand:STR(p.brand,120), category:STR(p.category,60),
+    price:NUM(p.price,1e7), cur:/^[A-Z]{3}$/.test(String(p.cur||''))?p.cur:S.currency,
+    size:NUM(p.size,1e5), unit:['ml','g','oz'].includes(p.unit)?p.unit:'ml',
+    ing:STR(p.ing,20000), notes:STR(p.notes,1000), url:SAFEURL(p.url||''),
+    cf:TRI(p.cf), vegan:TRI(p.vegan), plastic:TRI(p.plastic), refill:TRI(p.refill),
+    reviews:rv, myRating:[1,2,3,4,5].includes(+p.myRating)?+p.myRating:0,
+  };
+  if(p.demo===true) c.demo=true; if(p.scanned===true) c.scanned=true;
+  return c;
+}
+const cleanList=a=>(Array.isArray(a)?a:[]).slice(0,2000).map(cleanProduct).filter(Boolean);
+const hostOf=u=>{try{return new URL(u).hostname.replace(/^www\./,'')}catch(e){return ''}};
 /* ---- currency: auto-detected, changeable, live conversion ---- */
 const CUR_LIST=['AED','SAR','QAR','KWD','BHD','OMR','EGP','JOD','MAD','TRY','USD','CAD','EUR','GBP','INR','PKR','SGD','MYR','JPY','KRW','CNY','AUD'];
 function detectCurrency(){
@@ -387,7 +414,7 @@ function renderShelf(){
       <button class="meta" style="text-align:left" data-a="open" data-id="${f.p.id}">
         <div class="name">${esc(f.p.name)}</div>
         <div class="sub">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${esc(f.p.category||'')}</div>
-        <div class="sub">${priceLabel(f.p)}${f.p.size?` · ${f.p.size}${f.p.unit}`:''}${f.v?` · <b style="color:var(--ink)">${money(f.v)}</b>/10${f.p.unit}`:''}</div>
+        <div class="sub">${priceLabel(f.p)}${f.p.size?` · ${esc(f.p.size)}${esc(f.p.unit)}`:''}${f.v?` · <b style="color:var(--ink)">${money(f.v)}</b>/10${esc(f.p.unit)}`:''}</div>
         <div class="chips">${flagChips(f)}</div>
       </button>
       <div style="text-align:center">${ring(f.a.safety)}<div class="sub" style="font-size:11px;margin-top:3px">safety</div></div>
@@ -407,7 +434,7 @@ function renderCompare(){
   const units=new Set(fs.map(f=>f.p.unit));
   const rows=[
     ['Price',f=>priceLabel(f.p),f=>priceOf(f.p),'min'],
-    ['Size',f=>f.p.size?f.p.size+' '+f.p.unit:'—'],
+    ['Size',f=>f.p.size?esc(f.p.size+' '+f.p.unit):'—'],
     ['Price per 10 '+[...units].join('/'),f=>money(f.v),f=>f.v,'min'],
     ['Safety score',f=>`<b>${f.a.safety??'—'}</b> <span class="sub">${grade(f.a.safety)[0]}</span>`,f=>f.a.safety,'max'],
     ['Ethics score',f=>`<b>${f.e.score}</b>${f.e.unk?` <span class="sub">(${f.e.unk} unknown)</span>`:''}`,f=>f.e.score,'max'],
@@ -418,7 +445,7 @@ function renderCompare(){
     ['Review score',f=>f.r?`<b>${f.r.score}</b> <span class="sub">${f.r.rating!=null?'★'+f.r.rating.toFixed(1)+' · ':''}${f.r.conf}</span>`:'<span class="unk">No reviews yet</span>',f=>f.r?f.r.score:null,'max'],
     ['People love',f=>f.r&&f.r.pros.length?`<ul style="padding-left:16px;font-size:13px">${f.r.pros.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span class="unk">—</span>'],
     ['Complaints',f=>f.r&&f.r.cons.length?`<ul style="padding-left:16px;font-size:13px">${f.r.cons.slice(0,3).map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<span class="unk">—</span>'],
-    ['My rating',f=>f.p.myRating?'★'.repeat(f.p.myRating):'<span class="unk">—</span>',f=>f.p.myRating||null,'max'],
+    ['My rating',f=>f.p.myRating?'★'.repeat(Math.max(0,Math.min(5,f.p.myRating|0))):'<span class="unk">—</span>',f=>f.p.myRating||null,'max'],
     ['High concern',f=>f.a.by.high.length?`<div class="chips" style="margin:0">${f.a.by.high.map(ingChip).join('')}</div>`:'<span class="yes">None</span>',f=>f.a.by.high.length,'min'],
     ['Moderate',f=>f.a.by.mod.length?`<div class="chips" style="margin:0">${f.a.by.mod.map(ingChip).join('')}</div>`:'<span class="yes">None</span>',f=>f.a.by.mod.length,'min'],
     ['Plastics & PFAS',f=>{const l=[...f.a.by.eco.filter(i=>i.h.some(e=>e.t.includes('microplastic'))),...f.a.list.filter(i=>i.h.some(e=>e.t.includes('pfas')))];return l.length?`<div class="chips" style="margin:0">${l.map(ingChip).join('')}</div>`:'<span class="yes">None</span>'}],
@@ -439,7 +466,7 @@ function renderCompare(){
     <div>🛡️ <b>Safest formula:</b> ${esc(safest.p.name)}</div>
     <div>🌿 <b>Most ethical:</b> ${esc(ethic.p.name)}</div>
     ${(()=>{const rv=fs.filter(f=>f.r);if(!rv.length)return '';const b=rv.reduce((a,c)=>c.r.score>a.r.score?c:a);return `<div>💬 <b>Best reviewed:</b> ${esc(b.p.name)} (${b.r.score})</div>`})()}
-    ${cheap?`<div>💸 <b>Best value:</b> ${esc(cheap.p.name)} (${money(cheap.v)}/10${cheap.p.unit})</div>`:''}
+    ${cheap?`<div>💸 <b>Best value:</b> ${esc(cheap.p.name)} (${money(cheap.v)}/10${esc(cheap.p.unit)})</div>`:''}
     ${fs.some(f=>f.p.price>0&&(f.p.cur||S.currency)!==S.currency)?`<div class="note" style="margin-top:8px">Prices shown in ${esc(S.currency)}, converted at today's exchange rate.</div>`:''}
     ${units.size>1?'<div class="warn">These are sold in different units (ml and g), so the price per 10 is only a rough comparison.</div>':''}
   </div>
@@ -550,15 +577,15 @@ function productSheet(id,fresh){
   </div>
   <div class="card" style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:14px">
     <div>Price</div><div><b>${priceLabel(p)}</b></div>
-    <div>Size</div><div>${p.size?p.size+' '+p.unit:'—'}</div>
-    <div>Per 10 ${p.unit}</div><div><b>${money(f.v)}</b></div>
+    <div>Size</div><div>${p.size?esc(p.size+' '+p.unit):'—'}</div>
+    <div>Per 10 ${esc(p.unit)}</div><div><b>${money(f.v)}</b></div>
     <div>Cruelty-free</div><div>${tri(p.cf)}</div><div>Vegan</div><div>${tri(p.vegan)}</div>
     <div>Plastic-free pack</div><div>${tri(p.plastic)}</div><div>Refillable</div><div>${tri(p.refill)}</div>
   </div>
   ${f.e.warn.map(w=>`<div class="warn">${esc(w)}</div>`).join('')}
   ${reviewsHTML(p,f)}
   ${analysisHTML(f.a)}
-  ${p.url?`<p style="margin-top:12px;font-size:14px"><a href="${esc(p.url)}" target="_blank" rel="noopener">View in shop ↗</a></p>`:''}
+  ${SAFEURL(p.url)?`<p style="margin-top:12px;font-size:14px"><a href="${esc(SAFEURL(p.url))}" target="_blank" rel="noopener noreferrer nofollow">View on ${esc(hostOf(p.url))} ↗</a></p>`:''}
   <div class="row" style="margin-top:14px"><button class="btn danger" data-a="del" data-id="${p.id}">Delete</button><button class="btn" data-a="shareprod" data-id="${p.id}">Share</button><span class="spacer"></span><button class="btn" data-a="sel" data-id="${p.id}">${S.compare.includes(p.id)?'Remove from compare':'Add to compare'}</button><button class="btn primary" data-a="edit" data-id="${p.id}">Edit</button></div>`);
 }
 
@@ -589,6 +616,7 @@ function formSheet(id,prefill){
     const get=k=>form.querySelector(`[data-seg="${k}"] .on`)?.dataset.v||'unknown';
     const rec={...(id?p:{id:uid()}),name:d.name.trim(),brand:d.brand.trim(),category:d.category.trim(),price:d.price===''?null:+d.price,cur:d.cur||S.currency,size:d.size===''?null:+d.size,unit:d.unit,ing:d.ing,notes:d.notes,cf:get('cf'),vegan:get('vegan'),plastic:get('plastic'),refill:get('refill')};
     delete rec.demo;
+    Object.assign(rec,cleanProduct(rec));
     if(id)S.products=S.products.map(x=>x.id===id?rec:x);else S.products.unshift(rec);
     save();closeSheet();toast(id?'Saved':'Added to your shelf');if(!id&&tab==='scan'){scanText='';go('shelf')}else render();});
 }
@@ -697,7 +725,7 @@ function ingest(list){
       if(batch&&batch.sentiment!=null){same.reviews=same.reviews||[];same.reviews.push(batch);}
       updated.push(same);
     }else{
-      const rec={id:uid(),...fields,notes:note,scanned:true,reviews:batch&&batch.sentiment!=null?[batch]:[]};
+      const rec=cleanProduct({id:uid(),...fields,notes:note,scanned:true,reviews:batch&&batch.sentiment!=null?[batch]:[]});
       S.products.unshift(rec); added.push(rec);
     }
   }
@@ -853,12 +881,13 @@ async function shareImage(list){
 /* Opening a shared link */
 async function openShared(code){
   let d; try{ d=await unpackShare(code); }catch(e){ return toast('That share link looks broken'); }
-  const list=(d.p||[]).map(p=>({...p,id:'sh_'+uid()}));
+  const list=cleanList((d&&d.p)||[]).slice(0,500).map(p=>({...p,id:'sh_'+uid(),demo:undefined}));
   if(!list.length) return;
   window.__shared=list;
   const fs=list.map(full);
   openSheet(`<div class="row"><h2 style="flex:1">Shared with you</h2><button class="iconbtn" data-a="close">✕</button></div>
   <p class="lede">${list.length>4?`A list of ${list.length} products`:list.length>1?`A comparison of ${list.length} products`:'A product check'} from Shelf Check.</p>
+  <p class="note" style="margin-top:-6px">Shared by someone else. Scores are worked out on your device; shop links show their real website.</p>
   <div style="display:grid;gap:8px">${fs.map(f=>`<div class="card pcard"><span class="meta"><span class="name" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${priceLabel(f.p)}</span><span class="chips">${flagChips(f)}</span></span>${ring(f.a.safety,46)}</div>`).join('')}</div>
   <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn primary" data-a="sh-addall">${list.length>4?`Add all ${list.length} to my shelf`:'Add to my shelf & compare'}</button></div>`);
 }
@@ -872,7 +901,7 @@ function backupData(){ return JSON.stringify({app:'shelf-check',v:1,saved:new Da
 function importBackup(text){
   const d=JSON.parse(text); if(!Array.isArray(d.products)) throw 0;
   const have=new Set(S.products.map(p=>p.id)); let n=0;
-  d.products.forEach(p=>{ if(have.has(p.id)) return; if(!p.id) p.id=uid(); S.products.push(p); n++; });
+  cleanList(d.products).forEach(p=>{ if(have.has(p.id)) return; S.products.push(p); n++; });
   save(); render(); return n;
 }
 document.addEventListener('change',e=>{
@@ -916,7 +945,7 @@ document.addEventListener('click',e=>{
     case 'wipe':if(!wipeArmed){wipeArmed=true;t.textContent='Tap again to confirm';setTimeout(()=>{wipeArmed=false;t.textContent='Delete everything'},3000);break}S.products=[];S.compare=[];save();closeSheet();render();toast('Everything deleted');break;
     case 'export':document.getElementById('bk').value=JSON.stringify({v:1,currency:S.currency,products:S.products});break;
     case 'copybk':{const v=document.getElementById('bk');if(!v.value)v.value=JSON.stringify({v:1,currency:S.currency,products:S.products});navigator.clipboard?.writeText(v.value).then(()=>toast('Copied'),()=>{v.select();toast('Select all and copy')});break}
-    case 'import':try{const d=JSON.parse(document.getElementById('bk').value);if(!Array.isArray(d.products))throw 0;const have=new Set(S.products.map(p=>p.id));d.products.forEach(p=>{if(!p.id||have.has(p.id))p.id=uid();S.products.push(p)});if(d.currency)S.currency=d.currency;save();closeSheet();render();toast(`Imported ${d.products.length} products`)}catch(err){toast("That backup couldn't be read")}break;
+    case 'import':try{const d=JSON.parse(document.getElementById('bk').value);if(!Array.isArray(d.products))throw 0;const have=new Set(S.products.map(p=>p.id));cleanList(d.products).forEach(p=>{if(have.has(p.id))p.id=uid();S.products.push(p)});if(/^[A-Z]{3}$/.test(d.currency||''))S.currency=d.currency;save();closeSheet();render();toast(`Imported ${d.products.length} products`)}catch(err){toast("That backup couldn't be read")}break;
     case 'settings':settingsSheet();break;
     case 'scanclear':scanText='';renderScan();break;
     case 'scansave':formSheet(null,scanText);break;
