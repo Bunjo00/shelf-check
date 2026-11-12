@@ -9,6 +9,7 @@
 // is tried first and the paid one is used as a backup (change with AI_PROVIDER).
 
 import express from 'express';
+import compression from 'compression';
 import dns from 'node:dns/promises';
 import net from 'node:net';
 import path from 'node:path';
@@ -261,6 +262,7 @@ function fromStructuredData(ld) {
 const app = express();
 app.set('trust proxy', true);
 app.disable('x-powered-by');
+app.use(compression());
 app.use(express.json({ limit: '30mb' }));
 app.use((req, res, next) => {
   res.set({
@@ -373,7 +375,14 @@ ${page.excerpt}
   } catch (e) { fail(res, e); }
 });
 
-app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h', extensions: ['html'] }));
+app.use(express.static(path.join(__dirname, 'public'), {
+  extensions: ['html'],
+  setHeaders(res, file) {
+    // The page itself is always re-checked so updates show up straight away; icons are cached for a week.
+    if (/\.(html|webmanifest)$/.test(file) || file.endsWith('sw.js')) res.set('cache-control', 'no-cache');
+    else res.set('cache-control', 'public, max-age=604800');
+  },
+}));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) app.listen(PORT, () => console.log(`Shelf Check on :${PORT} · AI: ${providers().join(' → ') || 'none (set GEMINI_API_KEY or ANTHROPIC_API_KEY)'}`));

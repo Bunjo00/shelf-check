@@ -6,27 +6,42 @@
 <title>Shelf Check — compare beauty products</title>
 <meta name="description" content="Compare makeup and skincare: ingredients, toxicity flags, cruelty-free, price and reviews. Scan screenshots or paste links from any shop.">
 <meta name="theme-color" content="#a8475e">
+<script>try{var st=JSON.parse(localStorage.getItem("shelfcheck.v1")||"{}"),lg=st.lang||"auto";if(lg==="ar"||(lg==="auto"&&(navigator.languages||[navigator.language||""]).some(function(l){return String(l).toLowerCase().indexOf("ar")===0}))){document.documentElement.dir="rtl";document.documentElement.lang="ar";document.documentElement.className+=" i18n-wait";setTimeout(function(){document.documentElement.classList.remove("i18n-wait")},1500)}var t=st.theme||"auto";if(t==="dark"||(t==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches))document.documentElement.dataset.theme="dark";}catch(e){}</script>
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,650&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#faf6f2;--card:#fff;--ink:#2b2320;--muted:#7d706a;--line:#ece2da;
-  --rose:#a8475e;--rose-soft:#f6e3e7;
+  --rose:#a8475e;--rose-soft:#f6e3e7;--on-rose:#fff;
   --high:#b83227;--high-bg:#fce7e4;--mod:#a86a08;--mod-bg:#fcf0d9;
   --low:#62666e;--low-bg:#efeff1;--good:#2a7454;--good-bg:#e1f2e8;
   --eco:#2c6886;--eco-bg:#e0eef5;--animal:#74539f;--animal-bg:#eee6f7;
-  --r:16px;
+  --surface2:#fbf8f5;--soft:#f7f3ef;--seg:#f3ece6;--track:#eee6df;--border2:#cdbfb5;--header:rgba(250,246,242,.92);
+  --neutral-ink:#5d524d;--best-bg:#f1f9f4;--warn-ink:#7a4d05;--grab:#d9cdc4;--sw:#ddd2ca;--star-off:#dccfc6;--dot:#d8d0ca;
+  --star-bg:#fdf3d6;--star-ink:#8a6200;--shadow:rgba(0,0,0,.08);--overlay:rgba(43,35,32,.38);
+  --r:16px;color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#151214;--card:#211c1f;--ink:#f1e9e6;--muted:#ab9e99;--line:#362e32;
+  --rose:#e8869d;--rose-soft:#3b2229;--on-rose:#1c1015;
+  --high:#ff8f80;--high-bg:#3d201d;--mod:#f2b955;--mod-bg:#3b2d15;
+  --low:#bcc0c7;--low-bg:#2b282c;--good:#74d6a4;--good-bg:#163129;--eco:#82c4e6;--eco-bg:#172a3b;--animal:#c6a9ee;--animal-bg:#2c2339;
+  --surface2:#1c181a;--soft:#2b2528;--seg:#2b2528;--track:#3b3337;--border2:#5c5055;--header:rgba(21,18,20,.9);
+  --neutral-ink:#d8cdc8;--best-bg:#163129;--warn-ink:#f4cb7e;--grab:#4b4146;--sw:#4b4146;--star-off:#4b4146;--dot:#5c5055;
+  --star-bg:#3b2f12;--star-ink:#f2c95a;--shadow:rgba(0,0,0,.4);--overlay:rgba(0,0,0,.6);
+  color-scheme:dark;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--ink);font:15px/1.45 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html,body{background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;border:0;background:none}
 h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:650;letter-spacing:-.01em}
-header{position:sticky;top:0;z-index:5;background:rgba(250,246,242,.92);backdrop-filter:blur(10px);
+header{position:sticky;top:0;z-index:5;background:var(--header);backdrop-filter:blur(10px);
   padding:calc(env(safe-area-inset-top) + 14px) 18px 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
 header h1{font-size:22px}
 header h1 span{color:var(--rose)}
@@ -34,7 +49,7 @@ header h1 span{color:var(--rose)}
 main{max-width:860px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom))}
 .view{display:none}.view.on{display:block}
 .lede{color:var(--muted);margin:2px 0 14px}
-nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:#fff;border-top:1px solid var(--line);
+nav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--card);border-top:1px solid var(--line);
   display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
 nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0;font-size:11.5px;color:var(--muted);border-radius:12px}
 nav button svg{width:22px;height:22px}
@@ -42,7 +57,7 @@ nav button.on{color:var(--rose);font-weight:600}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .spacer{flex:1}
 .btn{padding:10px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-weight:500}
-.btn.primary{background:var(--rose);color:#fff;border-color:var(--rose)}
+.btn.primary{background:var(--rose);color:var(--on-rose);border-color:var(--rose)}
 .btn.small{padding:6px 10px;font-size:13px;border-radius:10px}
 .btn.danger{color:var(--high)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
@@ -52,8 +67,8 @@ nav button.on{color:var(--rose);font-weight:600}
 .pcard .name{font-weight:600;line-height:1.25}
 .pcard .sub{color:var(--muted);font-size:13px}
 .ring{--v:0;--c:var(--good);width:52px;height:52px;border-radius:50%;flex:none;display:grid;place-items:center;
-  background:conic-gradient(var(--c) calc(var(--v)*1%),#eee6df 0)}
-.ring b{width:42px;height:42px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:15px;font-weight:600}
+  background:conic-gradient(var(--c) calc(var(--v)*1%),var(--track) 0)}
+.ring b{width:42px;height:42px;border-radius:50%;background:var(--card);display:grid;place-items:center;font-size:15px;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
 .chip{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--low-bg);color:var(--low);white-space:nowrap}
 .chip.high{background:var(--high-bg);color:var(--high)}
@@ -61,60 +76,60 @@ nav button.on{color:var(--rose);font-weight:600}
 .chip.good{background:var(--good-bg);color:var(--good)}
 .chip.eco{background:var(--eco-bg);color:var(--eco)}
 .chip.animal{background:var(--animal-bg);color:var(--animal)}
-.chip.neutral{background:#f7f3ef;color:#5d524d}
+.chip.neutral{background:var(--soft);color:var(--neutral-ink)}
 .chip.rose{background:var(--rose-soft);color:var(--rose)}
 button.chip{cursor:pointer}
-.selbox{width:22px;height:22px;border-radius:7px;border:1.5px solid #cdbfb5;flex:none;display:grid;place-items:center;margin-top:2px}
+.selbox{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--border2);flex:none;display:grid;place-items:center;margin-top:2px}
 .selbox.on{background:var(--rose);border-color:var(--rose)}
-.selbox.on::after{content:"";width:9px;height:5px;border:2px solid #fff;border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
-.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 2px 8px;font-weight:600;font-family:Inter}
+.selbox.on::after{content:"";width:9px;height:5px;border:2px solid var(--on-rose);border-top:0;border-right:0;transform:rotate(-45deg) translate(1px,-1px)}
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 2px 8px;font-weight:600;font-family:inherit}
 .empty{text-align:center;color:var(--muted);padding:32px 12px}
-textarea,input[type=text],input[type=number],select{width:100%;border:1px solid var(--line);border-radius:12px;background:#fff;padding:10px 12px}
+textarea,input[type=text],input[type=number],input[type=url],input[type=search],select{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px}
 textarea{min-height:120px;resize:vertical}
 label.f{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px;font-weight:500}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .grid3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px}
-.seg{display:flex;background:#f3ece6;border-radius:12px;padding:3px}
+.seg{display:flex;background:var(--seg);border-radius:12px;padding:3px}
 .seg button{flex:1;padding:7px 4px;border-radius:9px;font-size:13px;color:var(--muted)}
-.seg button.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px var(--shadow)}
 .legend{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0}
-.summary div{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}
+.summary div{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px;text-align:center}
 .summary b{display:block;font-size:20px;font-family:Fraunces,serif}
 .summary small{font-size:11.5px;color:var(--muted)}
 /* compare */
-.cmp-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:#fff;-webkit-overflow-scrolling:touch}
+.cmp-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--card);-webkit-overflow-scrolling:touch}
 table.cmp{border-collapse:separate;border-spacing:0;min-width:100%}
 .cmp th,.cmp td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;font-size:14px;min-width:150px}
 .cmp tr:last-child td,.cmp tr:last-child th{border-bottom:0}
-.cmp th.rl{position:sticky;left:0;background:#fbf8f5;font-weight:500;color:var(--muted);font-size:12.5px;min-width:104px;max-width:110px;z-index:1}
-.cmp thead td{font-weight:600;background:#fff}
-.cmp td.best{background:#f1f9f4}
+.cmp th.rl{position:sticky;left:0;background:var(--surface2);font-weight:500;color:var(--muted);font-size:12.5px;min-width:104px;max-width:110px;z-index:1}
+.cmp thead td{font-weight:600;background:var(--card)}
+.cmp td.best{background:var(--best-bg)}
 .cmp td.best::after{content:" ★";color:var(--good);font-size:12px}
 .yes{color:var(--good);font-weight:600}.no{color:var(--high);font-weight:600}.unk{color:var(--muted)}
 /* sheet */
-.overlay{position:fixed;inset:0;background:rgba(43,35,32,.38);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.overlay{position:fixed;inset:0;background:var(--overlay);z-index:20;display:none;align-items:flex-end;justify-content:center}
 .overlay.on{display:flex}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;
   padding:8px 18px calc(22px + env(safe-area-inset-bottom));animation:up .22s ease}
 @media(min-width:700px){.overlay{align-items:center}.sheet{border-radius:22px;max-height:86vh}}
 @keyframes up{from{transform:translateY(40px);opacity:.5}to{transform:none;opacity:1}}
-.grab{width:40px;height:5px;border-radius:9px;background:#d9cdc4;margin:4px auto 12px}
+.grab{width:40px;height:5px;border-radius:9px;background:var(--grab);margin:4px auto 12px}
 .sheet h2{font-size:22px;margin-bottom:4px}
-.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:#fff;
+.toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--ink);color:var(--bg);
   padding:9px 16px;border-radius:999px;font-size:14px;z-index:30;opacity:0;transition:.2s;pointer-events:none}
 .toast.on{opacity:1}
 .note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.5}
-.warn{background:var(--mod-bg);color:#7a4d05;border-radius:12px;padding:9px 12px;font-size:13.5px;margin-top:10px}
+.warn{background:var(--mod-bg);color:var(--warn-ink);border-radius:12px;padding:9px 12px;font-size:13.5px;margin-top:10px}
 .reason{font-size:13px;color:var(--muted);margin-top:6px}
 .rank{font-family:Fraunces,serif;font-size:20px;color:var(--rose);width:24px;flex:none}
 .ingline{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line)}
 .ingline:last-child{border-bottom:0}
-.dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:#d8d0ca}
+.dot{width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:var(--dot)}
 .dot.high{background:var(--high)}.dot.mod{background:var(--mod)}.dot.low{background:#a2a6ad}.dot.good{background:var(--good)}.dot.eco{background:var(--eco)}.dot.animal{background:var(--animal)}
 .toggle{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 .toggle:last-child{border-bottom:0}
-.sw{width:42px;height:25px;border-radius:99px;background:#ddd2ca;position:relative;flex:none;transition:.15s}
+.sw{width:42px;height:25px;border-radius:99px;background:var(--sw);position:relative;flex:none;transition:.15s}
 .sw::after{content:"";position:absolute;top:3px;left:3px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
 .sw.on{background:var(--rose)}.sw.on::after{left:20px}
 a{color:var(--rose)}
@@ -129,14 +144,25 @@ a{color:var(--rose)}
 .spin{width:30px;height:30px;border-radius:50%;border:3px solid var(--rose-soft);border-top-color:var(--rose);animation:sp 0.8s linear infinite;margin:10px auto}
 @keyframes sp{to{transform:rotate(360deg)}}
 .stars{display:flex;gap:2px}
-.stars button{font-size:26px;line-height:1;color:#dccfc6;padding:2px}
+.stars button{font-size:26px;line-height:1;color:var(--star-off);padding:2px}
 .stars button.on{color:#e0a106}
-.bar{height:8px;border-radius:9px;background:#eee6df;overflow:hidden;margin-top:6px}
+.bar{height:8px;border-radius:9px;background:var(--track);overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;border-radius:9px}
 .pc{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
 .pc ul{padding-left:16px;font-size:13.5px;display:grid;gap:3px}
-.pc h4{font-size:12.5px;font-family:Inter;font-weight:600;margin-bottom:4px}
+.pc h4{font-size:12.5px;font-family:inherit;font-weight:600;margin-bottom:4px}
+html.i18n-wait body{visibility:hidden}
+[dir=rtl] body{font-family:"IBM Plex Sans Arabic",-apple-system,"Segoe UI",Tahoma,Arial,sans-serif}
+[dir=rtl] *{letter-spacing:0!important}
+[dir=rtl] h2,[dir=rtl] h3,[dir=rtl] .sheet h2,[dir=rtl] .scanhero b{font-family:"IBM Plex Sans Arabic",Tahoma,sans-serif;font-weight:700}
+[dir=rtl] [style*="text-align:left"],[dir=rtl] .pcard,[dir=rtl] .cmp th,[dir=rtl] .cmp td{text-align:right!important}
+[dir=rtl] .cmp th.rl{left:auto;right:0}
+[dir=rtl] ul{padding-left:0!important;padding-right:18px}
+[dir=rtl] .sw::after{left:auto;right:3px}[dir=rtl] .sw.on::after{right:20px;left:auto}
+[dir=rtl] .cmp td.best::after{content:" ★"}
+[dir=rtl] .linkbox input,[dir=rtl] input[type=url]{direction:ltr;text-align:right}
 @media print{
+  :root{color-scheme:light}
   header .iconbtn,nav,.overlay,.toast,.btn,.selbox,.scanhero,.linkbox{display:none!important}
   body,html{background:#fff}main{padding:0;max-width:none}
   .view{display:none!important}#v-compare{display:block!important}
@@ -147,10 +173,14 @@ a{color:var(--rose)}
 </head>
 <body>
 <header>
-  <h1>Shelf <span>Check</span></h1>
+  <h1 translate="no">Shelf <span>Check</span></h1>
+  <div class="row" style="gap:6px;flex-wrap:nowrap">
+  <button class="iconbtn" data-a="theme" aria-label="Night mode" id="themebtn"></button>
+  <button class="iconbtn" data-a="profile" aria-label="My profile"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg></button>
   <button class="iconbtn" data-a="settings" aria-label="Settings & data">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
   </button>
+  </div>
 </header>
 
 <main>
@@ -258,11 +288,11 @@ const demo=[
  {name:'Mineral Shield SPF 30',brand:'Demo · Kind Bloom',category:'Sunscreen',price:120,size:50,unit:'ml',cf:'yes',vegan:'yes',plastic:'yes',refill:'no',
   ing:'Aqua, Zinc Oxide, Caprylic/Capric Triglyceride, Glycerin, Squalane, Simmondsia Chinensis Seed Oil, Tocopherol, Sodium Hyaluronate, Allantoin, Phenoxyethanol'},
 ];
-let S={products:[],compare:[],currency:detectCurrency(),prefs:{cf:true,vegan:false,plastic:false,nofrag:false,nopar:true,nomicro:false,nohigh:true,cat:'Any',budget:'',mode:'balanced'}};
+let S={products:[],compare:[],currency:detectCurrency(),theme:'auto',lang:'auto',skin:{type:'',sensitive:false,acne:false},avoid:[],sort:'new',prefs:{cf:true,vegan:false,plastic:false,nofrag:false,nopar:true,nomicro:false,nohigh:true,cat:'Any',budget:'',mode:'balanced'}};
 let tab='shelf', scanText='';
 const uid=()=>Math.random().toString(36).slice(2,10);
 function load(){
-  try{const raw=localStorage.getItem(KEY); if(raw){const d=JSON.parse(raw); S={...S,...d,prefs:{...S.prefs,...(d.prefs||{})}}; S.products.forEach(p=>{if(!p.cur)p.cur=p.demo?'AED':S.currency}); S.products=cleanList(S.products); S.compare=(Array.isArray(S.compare)?S.compare:[]).filter(id=>S.products.some(p=>p.id===id)).slice(0,4); if(!/^[A-Z]{3}$/.test(S.currency))S.currency=detectCurrency(); return;}}catch(e){}
+  try{const raw=localStorage.getItem(KEY); if(raw){const d=JSON.parse(raw); S={...S,...d,prefs:{...S.prefs,...(d.prefs||{})}}; S.products.forEach(p=>{if(!p.cur)p.cur=p.demo?'AED':S.currency}); S.products=cleanList(S.products); S.compare=(Array.isArray(S.compare)?S.compare:[]).filter(id=>S.products.some(p=>p.id===id)).slice(0,4); if(!/^[A-Z]{3}$/.test(S.currency))S.currency=detectCurrency(); S.avoid=Array.isArray(S.avoid)?S.avoid.filter(x=>typeof x==='string'&&x.length<80).slice(0,60):[]; S.skin=(S.skin&&typeof S.skin==='object')?{type:['','normal','dry','oily','combination'].includes(S.skin.type)?S.skin.type:'',sensitive:!!S.skin.sensitive,acne:!!S.skin.acne}:{type:'',sensitive:false,acne:false}; if(!['auto','light','dark'].includes(S.theme))S.theme='auto'; if(!['auto','en','ar'].includes(S.lang))S.lang='auto'; if(!SORTS.some(x=>x[0]===S.sort))S.sort='new'; return;}}catch(e){}
   S.products=demo.map(p=>({...p,cur:'AED',id:uid(),demo:true}));
   S.compare=S.products.filter(p=>p.category==='Moisturizer').map(p=>p.id);
 }
@@ -282,7 +312,12 @@ function split(text){
 function hits(name){const s=name.toLowerCase(); return DB.filter(e=>e.r.test(s));}
 function worst(h){for(const l of LV_ORDER) if(h.some(e=>e.l===l)) return l; return 'neutral';}
 const PEN={high:20,mod:8,low:2};
+const _an=new Map();
 function analyze(text){
+  text=text||''; const c=_an.get(text); if(c) return c;
+  const r=analyzeRaw(text); if(_an.size>800) _an.clear(); _an.set(text,r); return r;
+}
+function analyzeRaw(text){
   const list=split(text).map(name=>{const h=hits(name);return {name,h,lv:worst(h)}});
   const by={high:[],mod:[],low:[],eco:[],animal:[],good:[]}; const tags=new Set(); let pen=0;
   list.forEach(i=>{
@@ -374,16 +409,18 @@ function reviewAgg(p){
     pros:uniq(B.flatMap(b=>b.pros||[])).slice(0,5),cons:uniq(B.flatMap(b=>b.cons||[])).slice(0,5),
     skin:uniq(B.flatMap(b=>b.skin||[])).slice(0,4),conf:read>=30?'many reviews':read>=8?'some reviews':read?'few reviews':'your rating only'};
 }
-function full(p){const a=analyze(p.ing);const e=ethics(p,a);return {p,a,e,v:per10(p),r:reviewAgg(p)}}
+function full(p){const a=analyze(p.ing);const e=ethics(p,a);return {p,a,e,v:per10(p),r:reviewAgg(p),fit:skinFit(a),av:avoidHits(a)}}
 function grade(s){ if(s==null)return['—','var(--low)']; if(s>=80)return['Great','var(--good)']; if(s>=60)return['Good','#5f8f3a']; if(s>=40)return['Caution','var(--mod)']; return['Avoid','var(--high)'];}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=v=>v==null||isNaN(v)?'—':(S.currency+' '+fmtNum(v));
 const tri=v=>v==='yes'?'<span class="yes">Yes</span>':v==='no'?'<span class="no">No</span>':'<span class="unk">Unknown</span>';
 function ring(s,size){const [,c]=grade(s);return `<div class="ring" style="--v:${s??0};--c:${c}${size?';width:'+size+'px;height:'+size+'px':''}"><b>${s??'—'}</b></div>`}
-function ingChip(i){return `<button class="chip ${i.lv}" data-a="ing" data-n="${esc(i.name)}">${esc(i.name)}</button>`}
+function ingChip(i){return `<button class="chip ${i.lv}" translate="no" data-a="ing" data-n="${esc(i.name)}">${esc(i.name)}</button>`}
 function flagChips(f){
   const c=[];const {a,e,p}=f;
-  if(f.r){const st=f.r.rating!=null?f.r.rating.toFixed(1):f.p.myRating?String(f.p.myRating):'';c.push(`<span class="chip" style="background:#fdf3d6;color:#8a6200">${st?'★ '+st+' · ':''}Reviews ${f.r.score}</span>`);}
+  if(f.av&&f.av.length)c.push(avoidChip(f));
+  if(f.fit)c.push(fitChip(f));
+  if(f.r){const st=f.r.rating!=null?f.r.rating.toFixed(1):f.p.myRating?String(f.p.myRating):'';c.push(`<span class="chip" style="background:var(--star-bg);color:var(--star-ink)">${st?'★ '+st+' · ':''}Reviews ${f.r.score}</span>`);}
   if(a.by.high.length)c.push(`<span class="chip high">${a.by.high.length} high concern</span>`);
   if(a.by.mod.length)c.push(`<span class="chip mod">${a.by.mod.length} moderate</span>`);
   if(p.cf==='yes')c.push('<span class="chip good">Cruelty-free</span>');
@@ -396,31 +433,184 @@ function flagChips(f){
   return c.join('');
 }
 
+/* ============ MY PROFILE: skin type + avoid list ============ */
+const SKIN_RULES=[
+ // [who, bad?, regex, short name, why]
+ ['acne',1,/isopropyl (myristate|palmitate|isostearate)|myristyl myristate|ethylhexyl palmitate|octyl palmitate|cocos nucifera|coconut oil|theobroma cacao|cocoa butter|laureth-4|algae extract|carrageenan|triticum vulgare germ|wheat germ oil|acetylated lanolin|lanolin|sodium lauryl sulfate/,'Pore-clogging','Known to clog pores for some acne-prone skin.'],
+ ['acne',0,/salicylic acid|niacinamide|zinc pca|azelaic acid|benzoyl peroxide|melaleuca|tea tree/,'Helps blemishes','Often helps with breakouts and oil.'],
+ ['sensitive',1,/\bparfum\b|fragrance|\baroma\b/,'Fragrance','The most common cause of irritation on sensitive skin.'],
+ ['sensitive',1,/limonene|linalool|citral|eugenol|geraniol|cinnamal|lavandula|mentha|menthol|peppermint|eucalyptus|camphor|citrus .*peel oil|bergamot/,'Essential oil / scent','Can sting or irritate sensitive skin.'],
+ ['sensitive',1,/alcohol denat|sd alcohol|^alcohol$/,'Drying alcohol','Can sting and weaken a sensitive skin barrier.'],
+ ['sensitive',1,/methylisothiazolinone|methylchloroisothiazolinone|dmdm hydantoin|imidazolidinyl urea|diazolidinyl urea|quaternium-15/,'Strong allergen','Frequent cause of allergic reactions.'],
+ ['sensitive',0,/centella|madecassoside|panthenol|allantoin|bisabolol|avena sativa|colloidal oatmeal|ceramide/,'Soothing','Calms and supports sensitive skin.'],
+ ['dry',1,/alcohol denat|sd alcohol|^alcohol$|sodium lauryl sulfate|ammonium lauryl sulfate|kaolin|bentonite/,'Drying','Can strip moisture from dry skin.'],
+ ['dry',0,/ceramide|hyaluron|^glycerin|squalane|butyrospermum|shea|\burea\b|panthenol|petrolatum/,'Hydrating','Helps dry skin hold moisture.'],
+ ['oily',1,/paraffinum liquidum|mineral oil|petrolatum|cocos nucifera|coconut oil|lanolin|cocoa butter|theobroma cacao/,'Heavy / greasy','Can feel heavy and greasy on oily skin.'],
+ ['oily',0,/niacinamide|salicylic acid|zinc|kaolin|hyaluron/,'Good for oily skin','Helps balance oil without heaviness.'],
+];
+const AVOID_GROUPS=[
+ ['tag:fragrance','Fragrance & scent allergens'],['tag:paraben','Parabens'],['tag:sulfate','Sulfates'],['tag:silicone','Silicones'],
+ ['re:alcohol','Drying alcohol'],['re:essential','Essential oils'],['tag:animal','Animal-derived'],['re:nuts','Nut oils'],
+ ['re:coconut','Coconut-derived'],['re:gluten','Wheat / gluten'],['tag:formaldehyde','Formaldehyde releasers'],
+ ['tag:chemuv','Chemical sunscreens'],['tag:microplastic','Microplastics'],['tag:pfas','PFAS'],['tag:dye','Synthetic dyes'],
+];
+const AVOID_RE={
+ alcohol:/alcohol denat|sd alcohol|^alcohol$|^ethanol$/,
+ essential:/lavandula|mentha|eucalyptus|rosmarinus|melaleuca|citrus .*oil|bergamot|ylang|geranium|tea tree|peppermint|eugenia|cinnamomum/,
+ nuts:/prunus amygdalus|almond|argania|argan|macadamia|juglans|walnut|corylus|hazelnut|pistachio|cashew|anacardium|bertholletia/,
+ coconut:/cocos nucifera|coconut|\bcoco-|cocamid|cocoyl|coco glucoside|cocoglucoside|cocamidopropyl/,
+ gluten:/triticum|wheat|hordeum|secale|hydrolyzed wheat/,
+};
+const avoidLabel=k=>(AVOID_GROUPS.find(g=>g[0]===k)||[k,k.replace(/^txt:/,'')])[1];
+function avoidHits(a){
+  const out=[]; const items=S.avoid||[];
+  if(!items.length||!a.n) return out;
+  for(const k of items){
+    let m=[];
+    if(k.startsWith('tag:')) m=a.list.filter(i=>i.h.some(e=>e.t.includes(k.slice(4))));
+    else if(k.startsWith('re:')&&AVOID_RE[k.slice(3)]) m=a.list.filter(i=>AVOID_RE[k.slice(3)].test(i.name.toLowerCase()));
+    else if(k.startsWith('txt:')){const q=k.slice(4).toLowerCase().trim(); if(q.length>1) m=a.list.filter(i=>i.name.toLowerCase().includes(q));}
+    if(m.length) out.push({k,label:avoidLabel(k),items:m});
+  }
+  return out;
+}
+function hasProfile(){const k=S.skin||{};return !!(k.type||k.sensitive||k.acne)}
+function skinFit(a){
+  if(!hasProfile()||!a.n) return null;
+  const k=S.skin, who=new Set(); if(k.type==='dry')who.add('dry'); if(k.type==='oily')who.add('oily'); if(k.type==='combination'){who.add('oily');}
+  if(k.sensitive)who.add('sensitive'); if(k.acne)who.add('acne');
+  const bad=[],good=[];
+  a.list.forEach(i=>{const n=i.name.toLowerCase();SKIN_RULES.forEach(([w,isBad,re,lab,why])=>{if(who.has(w)&&re.test(n)){(isBad?bad:good).push({name:i.name,lab,why,w})}})});
+  const uniq=arr=>{const s=new Set();return arr.filter(x=>{const key=x.name+'|'+x.lab;if(s.has(key))return false;s.add(key);return true})};
+  const merge=arr=>{const m=new Map();arr.forEach(x=>{const e=m.get(x.name);if(e){if(!e.lab.includes(x.lab))e.lab+=', '+x.lab.toLowerCase();if(!e.why.includes(x.why))e.why+=' '+x.why}else m.set(x.name,{...x})});return [...m.values()]};
+  const B=merge(uniq(bad)),G=merge(uniq(good));
+  const pen=B.reduce((t,x)=>t+(x.w==='sensitive'&&/Fragrance|allergen/.test(x.lab)?18:12),0);
+  const score=Math.max(0,Math.min(100,Math.round(80+Math.min(20,new Set(G.map(g=>g.name)).size*5)-pen)));
+  return {score,bad:B,good:G,label:score>=75?'Great fit':score>=55?'Okay fit':'Not ideal'};
+}
+function profileSummary(){
+  const k=S.skin||{};const parts=[];
+  if(k.type)parts.push({dry:'Dry',oily:'Oily',combination:'Combination',normal:'Normal'}[k.type]+' skin');
+  if(k.sensitive)parts.push('Sensitive');if(k.acne)parts.push('Acne-prone');
+  return parts.join(' · ');
+}
+function profileSheet(){
+  const k=S.skin||{}; const av=S.avoid||[];
+  const TG=(key,label,sub)=>`<div class="toggle"><div style="flex:1"><div style="font-weight:500">${label}</div>${sub?`<div style="font-size:12.5px;color:var(--muted)">${sub}</div>`:''}</div><button class="sw ${k[key]?'on':''}" data-a="skintog" data-k="${key}" aria-label="${label}"></button></div>`;
+  openSheet(`<div class="row"><h2 style="flex:1">My profile</h2><button class="iconbtn" data-a="close">✕</button></div>
+  <p class="lede">Scores and suggestions adjust to your skin. Saved only on this device.</p>
+  <label class="f">Skin type</label>
+  <div class="seg">${[['','Not set'],['normal','Normal'],['dry','Dry'],['oily','Oily'],['combination','Combo']].map(([v,l])=>`<button class="${(k.type||'')===v?'on':''}" data-a="skintype" data-k="${v}">${l}</button>`).join('')}</div>
+  <div class="card" style="padding:4px 14px;margin-top:10px">${TG('sensitive','Sensitive skin','Flags fragrance, essential oils, drying alcohol and common allergens')}${TG('acne','Acne-prone','Flags pore-clogging ingredients')}</div>
+  <div class="section-title">Ingredients I avoid</div>
+  <p style="font-size:13.5px;color:var(--muted);margin-bottom:8px">Allergies, sensitivities, or just preferences. Products containing these get a clear warning.</p>
+  <div class="chips">${AVOID_GROUPS.map(([key,l])=>`<button class="chip ${av.includes(key)?'high':'neutral'}" data-a="avoidtog" data-k="${key}">${av.includes(key)?'✓ ':''}${l}</button>`).join('')}</div>
+  <form class="linkbox" data-form="avoid" style="margin:12px 0 6px"><input type="text" name="q" placeholder="Add any ingredient, e.g. lanolin" autocomplete="off"><button class="btn" type="submit">Add</button></form>
+  ${av.filter(x=>x.startsWith('txt:')).length?`<div class="chips">${av.filter(x=>x.startsWith('txt:')).map(x=>`<button class="chip high" data-a="avoidtog" data-k="${esc(x)}">${esc(x.slice(4))} ✕</button>`).join('')}</div>`:''}
+  <p class="note">Skin advice here is general guidance based on common ingredient knowledge, not medical advice. For allergies, always check the full label.</p>`);
+}
+function fitChip(f){
+  if(!f.fit) return '';
+  const c=f.fit.score>=75?'good':f.fit.score>=55?'mod':'high';
+  return `<span class="chip ${c}">For you ${f.fit.score}</span>`;
+}
+function avoidChip(f){ return f.av&&f.av.length?`<span class="chip high">⚠ ${esc(f.av.map(h=>h.label).slice(0,2).join(', '))}</span>`:''; }
+function forYouHTML(f){
+  const parts=[];
+  if(f.av&&f.av.length) parts.push(`<div class="warn" style="background:var(--high-bg);color:var(--high);margin-top:10px"><b>⚠ Contains ingredients you avoid</b><br>${f.av.map(h=>`${esc(h.label)}: <span translate="no">${h.items.map(i=>esc(i.name)).join(', ')}</span>`).join('<br>')}</div>`);
+  if(f.fit){
+    const c=f.fit.score>=75?'var(--good)':f.fit.score>=55?'var(--mod)':'var(--high)';
+    parts.push(`<div class="section-title">For your skin <span style="text-transform:none;letter-spacing:0;font-weight:400">· ${esc(profileSummary())}</span></div>
+    <div class="card"><div class="row"><b style="font-family:Fraunces,serif;font-size:22px;color:${c}">${f.fit.score}</b><span style="color:${c};font-weight:600">${f.fit.label}</span></div>
+    <div class="bar"><i style="width:${f.fit.score}%;background:${c}"></i></div>
+    ${f.fit.bad.length||f.fit.good.length?`<div class="pc"><div><h4 style="color:var(--high)">Watch out</h4><ul>${f.fit.bad.map(x=>`<li><b translate="no">${esc(x.name)}</b>: ${esc(x.why)}</li>`).join('')||'<li>Nothing flagged</li>'}</ul></div><div><h4 style="color:var(--good)">Good for you</h4><ul>${f.fit.good.map(x=>`<li><b translate="no">${esc(x.name)}</b>: ${esc(x.lab.toLowerCase())}</li>`).join('')||'<li>—</li>'}</ul></div></div>`:''}</div>`);
+  } else if(!hasProfile()) parts.push(`<button class="card pcard" style="margin-top:10px" data-a="profile"><span style="font-size:22px">🧴</span><span class="meta"><span class="name" translate="no" style="display:block">See how it suits your skin</span><span class="sub" style="display:block">Set your skin type and the ingredients you avoid.</span></span></button>`);
+  return parts.join('');
+}
+document.addEventListener('submit',e=>{
+  const f=e.target.closest('[data-form="avoid"]'); if(!f) return; e.preventDefault();
+  const q=f.querySelector('input').value.trim().slice(0,60); if(q.length<2) return;
+  const key='txt:'+q.toLowerCase(); S.avoid=S.avoid||[]; if(!S.avoid.includes(key)) S.avoid.push(key);
+  save(); render(); profileSheet(); toast('Added to your avoid list');
+});
+
+/* ============ DUPE FINDER ============ */
+const normIng=n=>n.toLowerCase().replace(/\(.*?\)|\[.*?\]/g,'').replace(/\s+/g,' ').trim();
+const _sig=new Map();
+function ingSig(p){
+  const key=p.ing||''; if(_sig.has(key)) return _sig.get(key);
+  const m=new Map(); split(key).forEach((n,i)=>{const k=normIng(n); if(!k||/^(aqua|water|eau)\b/.test(k)||m.has(k)) return; m.set(k,1/(1+i*0.15));});
+  if(_sig.size>800)_sig.clear(); _sig.set(key,m); return m;
+}
+function similarity(a,b){
+  const A=ingSig(a),B=ingSig(b); if(A.size<4||B.size<4) return 0;
+  let inter=0,uni=0; const keys=new Set([...A.keys(),...B.keys()]);
+  keys.forEach(k=>{const x=A.get(k)||0,y=B.get(k)||0; inter+=Math.min(x,y); uni+=Math.max(x,y);});
+  return uni?inter/uni:0;
+}
+function findDupes(p,limit=3){
+  return S.products.filter(o=>o.id!==p.id&&!(o.demo&&!p.demo&&false)).map(o=>({o,sim:similarity(p,o)}))
+    .filter(x=>x.sim>=0.45).sort((a,b)=>b.sim-a.sim).slice(0,limit);
+}
+function dupesHTML(f){
+  const d=findDupes(f.p); if(!d.length) return '';
+  return `<div class="section-title">Similar formulas on your shelf</div><div style="display:grid;gap:8px">${d.map(({o,sim})=>{
+    const v2=per10(o); const save=f.v&&v2&&v2<f.v?Math.round((1-v2/f.v)*100):0;
+    return `<button class="card pcard" data-a="open" data-id="${o.id}"><span class="meta"><span class="name" translate="no" style="display:block">${esc(o.name)}</span><span class="sub" style="display:block">${esc(o.brand||'')}${o.brand?' · ':''}${priceLabel(o)}</span><span class="chips"><span class="chip ${sim>=0.6?'rose':'neutral'}">${Math.round(sim*100)}% same ingredients</span>${save>=10?`<span class="chip good">💸 ${save}% cheaper per ${esc(o.unit)}</span>`:''}</span></span></button>`}).join('')}</div>`;
+}
+function cheapDupes(all){
+  const out=[];
+  all.forEach(f=>{ if(!f.v) return; findDupes(f.p,5).forEach(({o,sim})=>{const v2=per10(o); if(v2&&v2<f.v*0.85&&sim>=0.5) out.push({f,o,sim,save:Math.round((1-v2/f.v)*100)});}); });
+  const seen=new Set(); return out.sort((a,b)=>b.save-a.save).filter(x=>{const k=x.f.p.id;if(seen.has(k))return false;seen.add(k);return true}).slice(0,5);
+}
+/* ============ SHELF SEARCH & SORT ============ */
+let shelfQuery='';
+const SORTS=[['new','Newest'],['safety','Safest'],['forme','Best for me'],['value','Cheapest per ml/g'],['reviews','Best reviewed'],['name','Name A–Z']];
+function sortShelf(items){
+  const k=S.sort||'new'; const by=fn=>items.slice().sort(fn);
+  if(k==='safety') return by((a,b)=>(b.a.safety??-1)-(a.a.safety??-1));
+  if(k==='forme') return by((a,b)=>((b.fit?b.fit.score:-1)-(b.av.length?100:0))-((a.fit?a.fit.score:-1)-(a.av.length?100:0)));
+  if(k==='value') return by((a,b)=>(a.v??1e12)-(b.v??1e12));
+  if(k==='reviews') return by((a,b)=>(b.r?b.r.score:-1)-(a.r?a.r.score:-1));
+  if(k==='name') return by((a,b)=>a.p.name.localeCompare(b.p.name));
+  return items;
+}
+function matchQuery(p,q){ if(!q) return true; q=q.toLowerCase(); return [p.name,p.brand,p.category,p.ing].some(x=>String(x||'').toLowerCase().includes(q)); }
+
 /* ============ VIEWS ============ */
 function cats(){return [...new Set(S.products.map(p=>p.category).filter(Boolean))].sort()}
 let shelfFilter='All';
 function renderShelf(){
   const el=document.getElementById('v-shelf');
-  const items=S.products.filter(p=>shelfFilter==='All'||p.category===shelfFilter).map(full);
   const hasDemo=S.products.some(p=>p.demo);
+  const sorts=SORTS.filter(([k])=>k!=='forme'||hasProfile());
   el.innerHTML=`
   <div class="row"><h2 style="font-size:24px">My shelf</h2><span class="spacer"></span><button class="btn" data-a="shareall">Share</button><button class="btn primary" data-a="add">+ Add</button></div>
   <p class="lede">Tap a product for the full ingredient breakdown. Tick the boxes to compare.</p>
   ${scanHero()}
+  ${S.products.length>2?`<div class="row" style="margin-bottom:10px;flex-wrap:nowrap"><input type="search" id="shelfq" placeholder="Search products" value="${esc(shelfQuery)}" style="flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px"><select id="shelfsort" style="width:auto;max-width:44%" aria-label="Sort">${sorts.map(([k,l])=>`<option value="${k}" ${(S.sort||'new')===k?'selected':''}>${l}</option>`).join('')}</select></div>`:''}
   ${cats().length>1?`<div class="chips" style="margin-bottom:12px">${['All',...cats()].map(c=>`<button class="chip ${c===shelfFilter?'rose':'neutral'}" data-a="sf" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`:''}
-  ${items.length?`<div class="list">${items.map(f=>{const sel=S.compare.includes(f.p.id);return `
+  <div id="shelflist"></div>
+  ${S.compare.length?`<div class="row" style="margin-top:14px"><span class="sub">${S.compare.length} selected</span><span class="spacer"></span><button class="btn small" data-a="clearsel">Clear</button><button class="btn small primary" data-a="go" data-t="compare">Compare →</button></div>`:''}
+  ${hasDemo?`<div class="warn">The products marked <b>Demo</b> are made-up examples to show how the app works. <button class="btn small" style="margin-left:4px" data-a="cleardemo">Remove demo products</button></div>`:''}`;
+  const q=document.getElementById('shelfq'); if(q) q.addEventListener('input',e=>{shelfQuery=e.target.value;renderShelfList()});
+  const so=document.getElementById('shelfsort'); if(so) so.addEventListener('change',e=>{S.sort=e.target.value;save();renderShelfList()});
+  renderShelfList();
+}
+function renderShelfList(){
+  const box=document.getElementById('shelflist'); if(!box) return;
+  const items=sortShelf(S.products.filter(p=>(shelfFilter==='All'||p.category===shelfFilter)&&matchQuery(p,shelfQuery)).map(full));
+  box.innerHTML=items.length?`<div class="list">${items.map(f=>{const sel=S.compare.includes(f.p.id);return `
     <div class="card pcard">
       <button class="selbox ${sel?'on':''}" data-a="sel" data-id="${f.p.id}" aria-label="Compare"></button>
       <button class="meta" style="text-align:left" data-a="open" data-id="${f.p.id}">
-        <div class="name">${esc(f.p.name)}</div>
+        <div class="name" translate="no">${esc(f.p.name)}</div>
         <div class="sub">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${esc(f.p.category||'')}</div>
         <div class="sub">${priceLabel(f.p)}${f.p.size?` · ${esc(f.p.size)}${esc(f.p.unit)}`:''}${f.v?` · <b style="color:var(--ink)">${money(f.v)}</b>/10${esc(f.p.unit)}`:''}</div>
         <div class="chips">${flagChips(f)}</div>
       </button>
       <div style="text-align:center">${ring(f.a.safety)}<div class="sub" style="font-size:11px;margin-top:3px">safety</div></div>
-    </div>`}).join('')}</div>`:`<div class="empty card">No products yet. Add one, or paste an ingredient list in <b>Check</b>.</div>`}
-  ${S.compare.length?`<div class="row" style="margin-top:14px"><span class="sub">${S.compare.length} selected</span><span class="spacer"></span><button class="btn small" data-a="clearsel">Clear</button><button class="btn small primary" data-a="go" data-t="compare">Compare →</button></div>`:''}
-  ${hasDemo?`<div class="warn">The products marked <b>Demo</b> are made-up examples to show how the app works. <button class="btn small" style="margin-left:4px" data-a="cleardemo">Remove demo products</button></div>`:''}`;
+    </div>`}).join('')}</div>`:(S.products.length?`<div class="empty card">No products match "${esc(shelfQuery)}".</div>`:`<div class="empty card">No products yet. Add one, or paste an ingredient list in <b>Check</b>.</div>`);
 }
 
 function renderCompare(){
@@ -438,6 +628,8 @@ function renderCompare(){
     ['Price per 10 '+[...units].join('/'),f=>money(f.v),f=>f.v,'min'],
     ['Safety score',f=>`<b>${f.a.safety??'—'}</b> <span class="sub">${grade(f.a.safety)[0]}</span>`,f=>f.a.safety,'max'],
     ['Ethics score',f=>`<b>${f.e.score}</b>${f.e.unk?` <span class="sub">(${f.e.unk} unknown)</span>`:''}`,f=>f.e.score,'max'],
+    ...((S.avoid||[]).length?[['Your avoid list',f=>f.av.length?`<span class="no">⚠ ${esc(f.av.map(h=>h.label).join(', '))}</span>`:'<span class="yes">✓ None</span>',f=>f.av.length,'min']]:[]),
+    ...(hasProfile()?[['Fit for your skin',f=>f.fit?`<b>${f.fit.score}</b> <span class="sub">${f.fit.label}</span>`:'—',f=>f.fit?f.fit.score:null,'max']]:[]),
     ['Cruelty-free',f=>tri(f.p.cf)],
     ['Vegan',f=>tri(f.p.vegan)+(f.a.tags.has('animal')?'<div class="chips"><span class="chip animal">has animal-derived</span></div>':'')],
     ['Plastic-free pack',f=>tri(f.p.plastic)],
@@ -471,7 +663,7 @@ function renderCompare(){
     ${units.size>1?'<div class="warn">These are sold in different units (ml and g), so the price per 10 is only a rough comparison.</div>':''}
   </div>
   <div class="cmp-wrap"><table class="cmp">
-    <thead><tr><th class="rl"></th>${fs.map(f=>`<td><div>${esc(f.p.name)}</div><div class="sub" style="font-weight:400;color:var(--muted);font-size:12.5px">${esc(f.p.brand||'')}</div><button class="btn small" style="margin-top:6px" data-a="sel" data-id="${f.p.id}">Remove</button></td>`).join('')}</tr></thead>
+    <thead><tr><th class="rl"></th>${fs.map(f=>`<td><div translate="no">${esc(f.p.name)}</div><div class="sub" style="font-weight:400;color:var(--muted);font-size:12.5px">${esc(f.p.brand||'')}</div><button class="btn small" style="margin-top:6px" data-a="sel" data-id="${f.p.id}">Remove</button></td>`).join('')}</tr></thead>
     <tbody>${rows.map(([lab,show,get,dir])=>{const b=get?best(get,dir):null;return `<tr><th class="rl">${lab}</th>${fs.map(f=>`<td class="${b!=null&&get(f)===b?'best':''}">${show(f)}</td>`).join('')}</tr>`}).join('')}</tbody>
   </table></div>
   <div class="section-title">In all of them (${shared.length})</div>
@@ -490,6 +682,7 @@ function renderScan(){
   document.getElementById('scanbox').addEventListener('input',e=>{scanText=e.target.value;renderScanOut()});
   renderScanOut();
 }
+function avoidSet(a){return new Set(avoidHits(a).flatMap(h=>h.items))}
 function analysisHTML(a){
   if(!a.n) return '';
   const [g,c]=grade(a.safety);
@@ -505,12 +698,13 @@ function analysisHTML(a){
   ${a.tags.has('animal')?`<div class="warn" style="background:var(--animal-bg);color:var(--animal)">Possibly not vegan: ${a.by.animal.map(i=>esc(i.name)).join(', ')}</div>`:''}
   ${tips?`<div class="section-title">Swap ideas</div><div class="card"><ul style="padding-left:18px;display:grid;gap:6px;font-size:14px">${tips}</ul></div>`:''}
   <div class="section-title">Every ingredient, in label order</div>
-  <div class="card" style="padding:4px 14px">${a.list.map(i=>`<button class="ingline" style="width:100%;text-align:left" data-a="ing" data-n="${esc(i.name)}"><span class="dot ${i.lv}"></span><span style="flex:1"><span style="font-weight:500">${esc(i.name)}</span>${i.h.length?`<br><span style="font-size:12.5px;color:var(--muted)">${i.h.map(e=>e.n).join(' · ')}</span>`:''}</span><span class="chip ${i.lv}" style="font-size:11px">${LV_LABEL[i.lv]}</span></button>`).join('')}</div>
+  <div class="card" style="padding:4px 14px">${a.list.map(i=>`<button class="ingline" style="width:100%;text-align:left" data-a="ing" data-n="${esc(i.name)}"><span class="dot ${i.lv}"></span><span style="flex:1"><span style="font-weight:500" translate="no">${esc(i.name)}</span>${i.h.length?`<br><span style="font-size:12.5px;color:var(--muted)">${i.h.map(e=>e.n).join(' · ')}</span>`:''}</span>${avoidSet(a).has(i)?'<span class="chip high" style="font-size:11px">You avoid</span>':`<span class="chip ${i.lv}" style="font-size:11px">${LV_LABEL[i.lv]}</span>`}</button>`).join('')}</div>
   <p class="note">Ingredients near the top of the list are present in the highest amounts. A flag means an ingredient has a known concern, not that the product is unsafe. How much is in it, how often you use it, and whether it stays on your skin all matter. This is not medical advice.</p>`;
 }
 function renderScanOut(){
   const a=analyze(scanText);
-  document.getElementById('scanout').innerHTML=a.n?analysisHTML(a):`<div class="card" style="margin-top:12px"><div class="sub" style="color:var(--muted);margin-bottom:8px">How flags work</div><div class="legend">${['high','mod','low','eco','animal','good'].map(l=>`<span class="chip ${l}">${LV_LABEL[l]}</span>`).join('')}</div><p style="font-size:14px">Shelf Check knows ${DB.length} ingredient groups: preservatives, fragrance, UV filters, PFAS, microplastics, animal-derived ingredients and more.</p></div>`;
+  const av=avoidHits(a);
+  document.getElementById('scanout').innerHTML=a.n?(av.length?`<div class="warn" style="background:var(--high-bg);color:var(--high);margin-top:12px"><b>⚠ Contains ingredients you avoid</b><br>${av.map(h=>`${esc(h.label)}: <span translate="no">${h.items.map(i=>esc(i.name)).join(', ')}</span>`).join('<br>')}</div>`:'')+(skinFit(a)?forYouHTML({a,fit:skinFit(a),av:[]}):'')+analysisHTML(a):`<div class="card" style="margin-top:12px"><div class="sub" style="color:var(--muted);margin-bottom:8px">How flags work</div><div class="legend">${['high','mod','low','eco','animal','good'].map(l=>`<span class="chip ${l}">${LV_LABEL[l]}</span>`).join('')}</div><p style="font-size:14px">Shelf Check knows ${DB.length} ingredient groups: preservatives, fragrance, UV filters, PFAS, microplastics, animal-derived ingredients and more.</p></div>`;
 }
 
 function renderSuggest(){
@@ -527,34 +721,37 @@ function renderSuggest(){
     if(P.nomicro&&(a.tags.has('microplastic')||a.tags.has('pfas')))r.push('microplastics/PFAS');
     if(P.nohigh&&a.by.high.length)r.push(a.by.high.length+' high-concern ingredient'+(a.by.high.length>1?'s':''));
     if(P.budget&&priceOf(p)>+P.budget)r.push('over budget');
+    if(P.noavoid!==false&&f.av&&f.av.length)r.push('has '+f.av.map(h=>h.label.toLowerCase()).join(', '));
     return r};
   const vs=all.filter(f=>f.v).map(f=>f.v); const vmin=Math.min(...vs);
   const valScore=f=>f.v?Math.round(vmin/f.v*100):40;
-  const score=f=>{const s=f.a.safety??50,e=f.e.score,v=valScore(f),r=f.r?f.r.score:50;
+  const score=f=>{const s=f.a.safety??50,e=f.e.score,v=valScore(f),r=f.r?f.r.score:50,m=f.fit?f.fit.score:null;
+    if(P.mode==='forme')return m!=null?m*.55+s*.25+r*.1+e*.1:s*.6+r*.2+e*.2;
     if(P.mode==='safest')return s*.75+e*.1+v*.05+r*.1;
     if(P.mode==='ethical')return e*.65+s*.2+v*.05+r*.1;
     if(P.mode==='value')return v*.6+s*.15+e*.1+r*.15;
     if(P.mode==='reviews')return r*.7+s*.2+e*.1;
-    return s*.35+e*.25+v*.15+r*.25};
+    return m!=null?s*.3+e*.2+v*.1+r*.2+m*.2:s*.35+e*.25+v*.15+r*.25};
   const pass=all.filter(f=>!reasons(f).length).sort((a,b)=>score(b)-score(a));
   const fail=all.filter(f=>reasons(f).length&&(P.cat==='Any'||f.p.category===P.cat));
-  const why=f=>{const w=[];if(f.a.safety>=80)w.push('clean formula');if(f.p.cf==='yes')w.push('cruelty-free');if(f.p.plastic==='yes')w.push('plastic-free pack');if(f.v&&f.v===vmin)w.push('best price per '+f.p.unit);if(f.r&&f.r.score>=75)w.push('well reviewed ('+f.r.score+')');if(f.r&&f.r.cons.length&&f.r.score<60)w.push('note: '+f.r.cons[0]);if(f.a.by.good.length)w.push(f.a.by.good.slice(0,2).map(i=>i.h.find(e=>e.l==='good').n.toLowerCase()).join(' + '));return w.join(' · ')||'meets your filters'};
+  const why=f=>{const w=[];if(f.fit&&f.fit.score>=75)w.push('suits your skin');if(f.a.safety>=80)w.push('clean formula');if(f.p.cf==='yes')w.push('cruelty-free');if(f.p.plastic==='yes')w.push('plastic-free pack');if(f.v&&f.v===vmin)w.push('best price per '+f.p.unit);if(f.r&&f.r.score>=75)w.push('well reviewed ('+f.r.score+')');if(f.r&&f.r.cons.length&&f.r.score<60)w.push('note: '+f.r.cons[0]);if(f.a.by.good.length)w.push(f.a.by.good.slice(0,2).map(i=>i.h.find(e=>e.l==='good').n.toLowerCase()).join(' + '));return w.join(' · ')||'meets your filters'};
   // swaps: products scoring low with a better one in same category
   const swaps=all.filter(f=>(f.a.safety??100)<60).map(f=>{const alt=all.filter(o=>o.p.id!==f.p.id&&o.p.category===f.p.category&&(o.a.safety??0)>(f.a.safety??0)+15).sort((a,b)=>score(b)-score(a))[0];return alt?{f,alt}:null}).filter(Boolean);
   el.innerHTML=`<h2 style="font-size:24px">Suggest</h2><p class="lede">Tell it what matters to you. It ranks what's on your shelf and suggests better swaps.</p>
   <div class="card" style="padding:4px 14px">
     ${T('cf','Cruelty-free only')}${T('vegan','Vegan only','Also checks the ingredients for animal-derived ones')}
     ${T('plastic','Plastic-free packaging')}${T('nofrag','Fragrance-free','Good for sensitive skin')}
-    ${T('nopar','No parabens')}${T('nomicro','No microplastics or PFAS')}${T('nohigh','No high-concern ingredients')}
+    ${T('nopar','No parabens')}${T('nomicro','No microplastics or PFAS')}${T('nohigh','No high-concern ingredients')}${(S.avoid||[]).length?`<div class="toggle"><div style="flex:1"><div style="font-weight:500">Skip my avoid list</div><div style="font-size:12.5px;color:var(--muted)">${esc((S.avoid||[]).map(avoidLabel).join(', '))}</div></div><button class="sw ${P.noavoid!==false?'on':''}" data-a="pref" data-k="noavoid" aria-label="Skip my avoid list"></button></div>`:''}
   </div>
   <div class="grid2" style="margin-top:10px">
-    <div><label class="f">Category</label><select data-a="prefsel" data-k="cat">${['Any',...cats()].map(c=>`<option ${c===P.cat?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
+    <div><label class="f">Category</label><select data-a="prefsel" data-k="cat">${['Any',...cats()].map(c=>`<option value="${esc(c)}" ${c===P.cat?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
     <div><label class="f">Max price (${esc(S.currency)})</label><input type="number" inputmode="decimal" data-a="prefsel" data-k="budget" value="${esc(P.budget)}" placeholder="No limit"></div>
   </div>
   <label class="f">Rank by</label>
-  <div class="seg">${[['balanced','Balanced'],['safest','Safest'],['ethical','Ethical'],['reviews','Reviews'],['value','Value']].map(([k,l])=>`<button class="${P.mode===k?'on':''}" data-a="mode" data-k="${k}">${l}</button>`).join('')}</div>
+  <div class="seg">${[['balanced','Balanced'],...(hasProfile()?[['forme','For me']]:[]),['safest','Safest'],['ethical','Ethical'],['reviews','Reviews'],['value','Value']].map(([k,l])=>`<button class="${P.mode===k?'on':''}" data-a="mode" data-k="${k}">${l}</button>`).join('')}</div>
   <div class="section-title">Top picks (${pass.length})</div>
-  ${pass.length?`<div style="display:grid;gap:8px">${pass.map((f,i)=>`<button class="card pcard" data-a="open" data-id="${f.p.id}"><span class="rank">${i+1}</span><span class="meta"><span class="name" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.category||'')} · ${priceLabel(f.p)}</span><span class="reason" style="display:block">✓ ${esc(why(f))}</span></span>${ring(f.a.safety,46)}</button>`).join('')}</div>`:'<div class="card empty">Nothing on your shelf matches every filter. Try turning one off, or add more products.</div>'}
+  ${pass.length?`<div style="display:grid;gap:8px">${pass.map((f,i)=>`<button class="card pcard" data-a="open" data-id="${f.p.id}"><span class="rank">${i+1}</span><span class="meta"><span class="name" translate="no" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.category||'')} · ${priceLabel(f.p)}</span><span class="reason" style="display:block">✓ ${esc(why(f))}</span></span>${ring(f.a.safety,46)}</button>`).join('')}</div>`:'<div class="card empty">Nothing on your shelf matches every filter. Try turning one off, or add more products.</div>'}
+  ${(()=>{const cd=cheapDupes(all);return cd.length?`<div class="section-title">Cheaper dupes</div><div style="display:grid;gap:8px">${cd.map(({f,o,sim,save})=>`<div class="card"><div class="sub" style="color:var(--muted);font-size:13px">Instead of</div><div style="font-weight:600">${esc(f.p.name)}</div><div class="sub" style="color:var(--muted);font-size:13px;margin-top:6px">Try (${Math.round(sim*100)}% same ingredients)</div><button style="font-weight:600;text-align:left" data-a="open" data-id="${o.id}">${esc(o.name)} <span class="chip good" style="margin-left:4px">💸 ${save}% cheaper</span></button></div>`).join('')}</div>`:''})()}
   ${swaps.length?`<div class="section-title">Better swaps</div><div style="display:grid;gap:8px">${swaps.map(({f,alt})=>`<div class="card"><div class="sub" style="color:var(--muted);font-size:13px">Instead of</div><div style="font-weight:600">${esc(f.p.name)} <span class="chip high" style="margin-left:4px">${f.a.safety}</span></div><div class="sub" style="color:var(--muted);font-size:13px;margin-top:6px">Try</div><button style="font-weight:600;text-align:left" data-a="open" data-id="${alt.p.id}">${esc(alt.p.name)} <span class="chip good" style="margin-left:4px">${alt.a.safety}</span></button><div class="reason">${[...f.a.tags].filter(t=>ALT[t]&&!alt.a.tags.has(t)).slice(0,2).map(t=>ALT[t]).join(' ')}</div></div>`).join('')}</div>`:''}
   ${fail.length?`<div class="section-title">Didn't make the cut</div><div class="card" style="padding:4px 14px">${fail.map(f=>`<div class="toggle"><div style="flex:1"><div style="font-weight:500">${esc(f.p.name)}</div><div style="font-size:12.5px;color:var(--high)">${reasons(f).join(' · ')}</div></div></div>`).join('')}</div>`:''}`;
 }
@@ -570,7 +767,7 @@ function productSheet(id,fresh){
   const p=S.products.find(x=>x.id===id); if(!p)return; const f=full(p);
   openSheet(`${fresh?`<div class="warn" style="background:var(--good-bg);color:var(--good);margin:0 0 12px">✓ Added${S.compare.includes(id)?' and ready to compare':''}. Tap Edit if anything looks off.${!p.ing?'<br><b>No ingredient list was found. Try another photo of the back.</b>':''}</div>
   <div class="row" style="margin-bottom:12px">${AI?`<label class="btn small primary" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Scan another</label>`:''}${S.compare.length>=2?'<button class="btn small" data-a="gocmp">Compare now →</button>':''}</div>`:''}
-  <div class="row" style="align-items:flex-start"><div style="flex:1"><h2>${esc(p.name)}</h2><div class="sub" style="color:var(--muted)">${esc(p.brand||'')} · ${esc(p.category||'')}</div></div><button class="iconbtn" data-a="close">✕</button></div>
+  <div class="row" style="align-items:flex-start"><div style="flex:1"><h2 translate="no">${esc(p.name)}</h2><div class="sub" style="color:var(--muted)">${esc(p.brand||'')} · ${esc(p.category||'')}</div></div><button class="iconbtn" data-a="close">✕</button></div>
   <div class="grid2" style="margin-top:12px">
     <div class="card" style="display:flex;gap:10px;align-items:center">${ring(f.a.safety)}<div><b>Safety</b><div class="sub" style="font-size:12.5px;color:var(--muted)">${grade(f.a.safety)[0]}</div></div></div>
     <div class="card" style="display:flex;gap:10px;align-items:center">${ring(f.e.score)}<div><b>Ethics</b><div class="sub" style="font-size:12.5px;color:var(--muted)">${(()=>{const u=['cf','vegan','plastic','refill'].filter(k=>p[k]==='unknown').length;return u?u+' not known':'all known'})()}</div></div></div>
@@ -583,6 +780,8 @@ function productSheet(id,fresh){
     <div>Plastic-free pack</div><div>${tri(p.plastic)}</div><div>Refillable</div><div>${tri(p.refill)}</div>
   </div>
   ${f.e.warn.map(w=>`<div class="warn">${esc(w)}</div>`).join('')}
+  ${forYouHTML(f)}
+  ${dupesHTML(f)}
   ${reviewsHTML(p,f)}
   ${analysisHTML(f.a)}
   ${SAFEURL(p.url)?`<p style="margin-top:12px;font-size:14px"><a href="${esc(SAFEURL(p.url))}" target="_blank" rel="noopener noreferrer nofollow">View on ${esc(hostOf(p.url))} ↗</a></p>`:''}
@@ -600,8 +799,8 @@ function formSheet(id,prefill){
     <div><label class="f">Category</label><input type="text" name="category" list="catlist" value="${esc(p.category)}" placeholder="Moisturizer"><datalist id="catlist">${catOpts.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div></div>
     <div class="grid3"><div><label class="f">Price</label><input type="number" step="any" inputmode="decimal" name="price" value="${esc(p.price)}"></div>
     <div><label class="f">Size</label><input type="number" step="any" inputmode="decimal" name="size" value="${esc(p.size)}"></div>
-    <div><label class="f">Unit</label><select name="unit">${['ml','g','oz'].map(u=>`<option ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div>
-    <label class="f">Price currency</label><select name="cur">${[...new Set([p.cur||S.currency,...CUR_LIST])].map(c=>`<option ${c===(p.cur||S.currency)?'selected':''}>${esc(c)}</option>`).join('')}</select>
+    <div><label class="f">Unit</label><select name="unit">${['ml','g','oz'].map(u=>`<option value="${u}" ${p.unit===u?'selected':''}>${u}</option>`).join('')}</select></div></div>
+    <label class="f">Price currency</label><select name="cur">${[...new Set([p.cur||S.currency,...CUR_LIST])].map(c=>`<option value="${esc(c)}" ${c===(p.cur||S.currency)?'selected':''}>${esc(c)}</option>`).join('')}</select>
     <label class="f">Ingredients (paste from the label)</label><textarea name="ing" id="fing" placeholder="Aqua, Glycerin, …">${esc(p.ing)}</textarea>
     <div id="fprev" class="chips"></div>
     ${seg('cf','Cruelty-free (e.g. Leaping Bunny certified)')}${seg('vegan','Vegan')}${seg('plastic','Plastic-free packaging')}${seg('refill','Refillable')}
@@ -632,7 +831,11 @@ function ingSheet(name){
 
 function settingsSheet(){
   openSheet(`<div class="row"><h2 style="flex:1">Settings & data</h2><button class="iconbtn" data-a="close">✕</button></div>
-  <label class="f">Show prices in</label><select id="cur">${[...new Set([S.currency,...CUR_LIST])].map(c=>`<option ${c===S.currency?'selected':''}>${esc(c)}</option>`).join('')}</select>
+  <label class="f">Language</label>
+  <div class="seg">${[['auto','Auto'],['en','English'],['ar','العربية']].map(([k,l])=>`<button class="${(S.lang||'auto')===k?'on':''}" data-a="langset" data-k="${k}" translate="no">${k==='auto'?tr('Auto'):l}</button>`).join('')}</div>
+  <label class="f">Appearance</label>
+  <div class="seg">${[['auto','Auto'],['light','Light'],['dark','Dark']].map(([k,l])=>`<button class="${(S.theme||'auto')===k?'on':''}" data-a="themeset" data-k="${k}">${l}</button>`).join('')}</div>
+  <label class="f">Show prices in</label><select id="cur">${[...new Set([S.currency,...CUR_LIST])].map(c=>`<option value="${esc(c)}" ${c===S.currency?'selected':''}>${esc(c)}</option>`).join('')}</select>
   <p class="note" style="margin-top:6px">Picked automatically from your location. Prices in other currencies are converted. <a href="https://www.exchangerate-api.com" target="_blank" rel="noopener">Rates by Exchange Rate API</a></p>
   <div class="section-title">Backup</div>
   <p style="font-size:14px">Your shelf is saved in this browser only. Save a backup file to your phone or computer, and restore it any time, on any device.</p>
@@ -735,7 +938,7 @@ function ingest(list){
   if(all.length===1) return productSheet(all[0].id,true);
   sh.innerHTML=`<div class="grab"></div><h2>Found ${all.length} products</h2>
     <p class="lede">${added.length} added${updated.length?`, ${updated.length} already on your shelf and updated`:''}. Tap one to see its details.</p>
-    <div style="display:grid;gap:8px">${all.map(p=>{const f=full(p);return `<button class="card pcard" data-a="open" data-id="${p.id}"><span class="meta"><span class="name" style="display:block">${esc(p.name)}</span><span class="sub" style="display:block">${esc(p.brand||'')} · ${priceLabel(p)}</span>${!p.ing?'<span class="reason" style="display:block">No ingredients found yet. Open its own page or scan the back of the box.</span>':''}</span>${ring(f.a.safety,46)}</button>`}).join('')}</div>
+    <div style="display:grid;gap:8px">${all.map(p=>{const f=full(p);return `<button class="card pcard" data-a="open" data-id="${p.id}"><span class="meta"><span class="name" translate="no" style="display:block">${esc(p.name)}</span><span class="sub" style="display:block">${esc(p.brand||'')} · ${priceLabel(p)}</span>${!p.ing?'<span class="reason" style="display:block">No ingredients found yet. Open its own page or scan the back of the box.</span>':''}</span>${ring(f.a.safety,46)}</button>`}).join('')}</div>
     <div class="row" style="margin-top:14px">${AI?'<label class="btn small" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Scan more</label>':''}<span class="spacer"></span><button class="btn small primary" data-a="gocmp">Compare →</button></div>`;
 }
 /* Share: native share sheet on phones, copy as fallback */
@@ -749,7 +952,7 @@ function compareSummary(){
   return 'Shelf Check comparison:\n'+fs.map(f=>`• ${f.p.name}${f.p.brand?' ('+f.p.brand+')':''}: safety ${f.a.safety??'—'}/100, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}${f.v?', '+money(f.v)+' per 10'+f.p.unit:''}`).join('\n');
 }
 function listSummary(list,title){
-  return title+':\n'+list.map(full).map(f=>`• ${f.p.name}${f.p.brand?' ('+f.p.brand+')':''}: safety ${f.a.safety??'—'}/100, ethics ${f.e.score}/100${f.r?', reviews '+f.r.score+'/100':''}`).join('\n');
+  return title+':\n'+list.map(full).map(f=>`• ${f.p.name}${f.p.brand?' ('+f.p.brand+')':''}: ${tr('safety')} ${f.a.safety??'—'}/100, ${tr('ethics')} ${f.e.score}/100${f.r?', '+tr('reviews')+' '+f.r.score+'/100':''}`).join('\n');
 }
 function productSummary(p){
   const f=full(p);
@@ -819,10 +1022,10 @@ function shareSheet(kind,id){
   openSheet(`<div class="row"><h2 style="flex:1">Share ${kind==='all'?'my shelf':list.length>1?'comparison':'product'}</h2><button class="iconbtn" data-a="close">✕</button></div>
   <p class="lede">${kind==='all'?`All ${list.length} product${list.length===1?'':'s'} on your shelf`:list.map(p=>esc(p.name)).join(' · ')}</p>
   <div style="display:grid;gap:8px">
-    <button class="card pcard" data-a="sh-link" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🔗</span><span class="meta"><span class="name" style="display:block">Send a link</span><span class="sub" style="display:block">Opens these results on any phone. They can add them to their own shelf.</span></span></button>
-    <button class="card pcard" data-a="sh-img" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🖼️</span><span class="meta"><span class="name" style="display:block">Share as image</span><span class="sub" style="display:block">A picture of the scores for WhatsApp, Instagram or your photos.</span></span></button>
-    ${kind==='cmp'?`<button class="card pcard" data-a="sh-pdf"><span style="font-size:22px">📄</span><span class="meta"><span class="name" style="display:block">Save as PDF / print</span><span class="sub" style="display:block">Keep the full comparison table as a file.</span></span></button>`:''}
-    <button class="card pcard" data-a="sh-text" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">💬</span><span class="meta"><span class="name" style="display:block">Share as text</span><span class="sub" style="display:block">A short summary you can paste anywhere.</span></span></button>
+    <button class="card pcard" data-a="sh-link" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🔗</span><span class="meta"><span class="name" translate="no" style="display:block">Send a link</span><span class="sub" style="display:block">Opens these results on any phone. They can add them to their own shelf.</span></span></button>
+    <button class="card pcard" data-a="sh-img" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">🖼️</span><span class="meta"><span class="name" translate="no" style="display:block">Share as image</span><span class="sub" style="display:block">A picture of the scores for WhatsApp, Instagram or your photos.</span></span></button>
+    ${kind==='cmp'?`<button class="card pcard" data-a="sh-pdf"><span style="font-size:22px">📄</span><span class="meta"><span class="name" translate="no" style="display:block">Save as PDF / print</span><span class="sub" style="display:block">Keep the full comparison table as a file.</span></span></button>`:''}
+    <button class="card pcard" data-a="sh-text" data-k="${kind}" data-id="${id||''}"><span style="font-size:22px">💬</span><span class="meta"><span class="name" translate="no" style="display:block">Share as text</span><span class="sub" style="display:block">A short summary you can paste anywhere.</span></span></button>
   </div>`);
 }
 async function shareOrCopy(title,text,url){
@@ -848,7 +1051,7 @@ async function shareImage(list){
   x.fillStyle='#faf6f2'; x.fillRect(0,0,W,H);
   x.fillStyle='#a8475e'; x.fillRect(0,0,W,180);
   x.fillStyle='#fff'; x.font='700 60px Georgia, serif'; x.fillText('Shelf Check',pad,100);
-  x.font='400 30px system-ui, sans-serif'; x.fillText(list.length>4?`My shelf · ${list.length} products`:fs.length>1?`Comparing ${fs.length} products`:'Product check',pad,148);
+  x.font='400 30px system-ui, sans-serif'; x.fillText(tr(list.length>4?`My shelf · ${list.length} products`:fs.length>1?`Comparing ${fs.length} products`:'Product check'),pad,148);
   const col=s=>s==null?'#8a8a8a':s>=80?'#2a7454':s>=60?'#5f8f3a':s>=40?'#a86a08':'#b83227';
   let y=180+60+50;
   const plain=p=>{if(!(p.price>0))return '';const v=priceOf(p);return v!=null?`${S.currency} ${fmtNum(v)}`:`${p.cur||S.currency} ${fmtNum(p.price)}`};
@@ -862,19 +1065,19 @@ async function shareImage(list){
     pills.forEach(([lab,v],k)=>{const px=pad+8+k*300,py=y+82;
       x.fillStyle=col(v); x.beginPath(); x.arc(px+40,py+40,40,0,Math.PI*2); x.fill();
       x.fillStyle='#fff'; x.font='700 32px system-ui, sans-serif'; x.textAlign='center'; x.fillText(v==null?'—':String(v),px+40,py+51); x.textAlign='left';
-      x.fillStyle='#2b2320'; x.font='600 28px system-ui, sans-serif'; x.fillText(lab,px+96,py+50);});
+      x.fillStyle='#2b2320'; x.font='600 28px system-ui, sans-serif'; x.fillText(tr(lab),px+96,py+50);});
     y+=rowH;
   });
-  if(more){ x.fillStyle='#7d706a'; x.font='600 28px system-ui, sans-serif'; x.fillText(`+ ${more} more on the shared link`,pad,y-10); y+=50; }
+  if(more){ x.fillStyle='#7d706a'; x.font='600 28px system-ui, sans-serif'; x.fillText(tr(`+ ${more} more on the shared link`),pad,y-10); y+=50; }
   if(fs.length>1){
     const best=(fn)=>fs.reduce((a,b)=>(fn(b)??-1)>(fn(a)??-1)?b:a);
     const lines=[['Safest',best(f=>f.a.safety).p.name],['Most ethical',best(f=>f.e.score).p.name]];
     const rv=fs.filter(f=>f.r); if(rv.length) lines.push(['Best reviewed',best(f=>f.r?f.r.score:null).p.name]);
     const cheap=fs.filter(f=>f.v).sort((a,b)=>a.v-b.v)[0]; if(cheap) lines.push(['Best value',cheap.p.name]);
-    y+=10; x.fillStyle='#2b2320'; x.font='700 34px Georgia, serif'; x.fillText('Verdict',pad,y-6);
-    lines.forEach(([k,v],i)=>{x.font='600 28px system-ui, sans-serif';x.fillStyle='#a8475e';x.fillText(k,pad,y+42+i*42);x.fillStyle='#2b2320';x.font='400 28px system-ui, sans-serif';x.fillText(v.length>42?v.slice(0,40)+'…':v,pad+230,y+42+i*42)});
+    y+=10; x.fillStyle='#2b2320'; x.font='700 34px Georgia, serif'; x.fillText(tr('Verdict'),pad,y-6);
+    lines.forEach(([k,v],i)=>{x.font='600 28px system-ui, sans-serif';x.fillStyle='#a8475e';x.fillText(tr(k),pad,y+42+i*42);x.fillStyle='#2b2320';x.font='400 28px system-ui, sans-serif';x.fillText(v.length>42?v.slice(0,40)+'…':v,pad+230,y+42+i*42)});
   }
-  x.fillStyle='#7d706a'; x.font='400 24px system-ui, sans-serif'; x.fillText('Check your own products at '+location.host,pad,H-50);
+  x.fillStyle='#7d706a'; x.font='400 24px system-ui, sans-serif'; x.fillText(tr('Check your own products at '+location.host),pad,H-50);
   const blob=await new Promise(r=>c.toBlob(r,'image/png'));
   await shareFile(blob,'shelf-check-comparison.png','Shelf Check');
 }
@@ -888,7 +1091,7 @@ async function openShared(code){
   openSheet(`<div class="row"><h2 style="flex:1">Shared with you</h2><button class="iconbtn" data-a="close">✕</button></div>
   <p class="lede">${list.length>4?`A list of ${list.length} products`:list.length>1?`A comparison of ${list.length} products`:'A product check'} from Shelf Check.</p>
   <p class="note" style="margin-top:-6px">Shared by someone else. Scores are worked out on your device; shop links show their real website.</p>
-  <div style="display:grid;gap:8px">${fs.map(f=>`<div class="card pcard"><span class="meta"><span class="name" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${priceLabel(f.p)}</span><span class="chips">${flagChips(f)}</span></span>${ring(f.a.safety,46)}</div>`).join('')}</div>
+  <div style="display:grid;gap:8px">${fs.map(f=>`<div class="card pcard"><span class="meta"><span class="name" translate="no" style="display:block">${esc(f.p.name)}</span><span class="sub" style="display:block">${esc(f.p.brand||'')}${f.p.brand?' · ':''}${priceLabel(f.p)}</span><span class="chips">${flagChips(f)}</span></span>${ring(f.a.safety,46)}</div>`).join('')}</div>
   <div class="row" style="margin-top:14px"><span class="spacer"></span><button class="btn primary" data-a="sh-addall">${list.length>4?`Add all ${list.length} to my shelf`:'Add to my shelf & compare'}</button></div>`);
 }
 function addShared(){
@@ -911,6 +1114,69 @@ document.addEventListener('change',e=>{
   e.target.value='';
 });
 
+/* ============ LANGUAGE (English / Arabic) ============ */
+let LANG='en', LOW=null;
+function wantLang(){ return S.lang==='en'||S.lang==='ar'? S.lang : ((navigator.languages||[navigator.language||'']).some(l=>String(l).toLowerCase().startsWith('ar'))?'ar':'en'); }
+function tr(t){ if(LANG!=='ar'||!window.AR||!t) return t; return trCore(String(t))||t; }
+const PREFIX=/^((?:✓|⚠|💡|📷|⬇️|⬆️|🔗|🖼️|📄|💬|🛡️|🌿|💸|🧴|★|•|·|:)\s*)([\s\S]+)$/u;
+function trExact(t){ if(!window.AR) return null; const D=AR.dict; if(D[t]!=null) return D[t]; if(!LOW){LOW=new Map();for(const k in D)LOW.set(k.toLowerCase(),D[k]);} return LOW.get(String(t).toLowerCase())||null; }
+function trCore(t,noSent){
+  const D=AR.dict; if(D[t]!=null) return D[t];
+  if(!LOW){LOW=new Map();for(const k in D)LOW.set(k.toLowerCase(),D[k]);}
+  const lo=LOW.get(t.toLowerCase()); if(lo) return lo;
+  for(const [re,fn] of AR.rules){const m=t.match(re); if(m){const r=fn(m); if(r!=null) return r;}}
+  let m=t.match(PREFIX); if(m){const r=trCore(m[2]); if(r) return m[1]+r;}
+  m=t.match(/^([\s\S]+?)(\s*[✕↗→])$/); if(m){const r=trCore(m[1]); if(r) return r+m[2];}
+  m=t.match(/^([^:]+?)(\s*:)$/); if(m){const r=trCore(m[1],true); if(r) return r+m[2];}
+  for(const sep of [' · ',' + ']){ if(t.includes(sep)){const parts=t.split(sep);const out=parts.map(x=>x.trim()?trCore(x.trim())||x:x);if(out.some((x,i)=>x!==parts[i]))return out.join(sep);} }
+  if(t.includes(', ')&&t.length<240){const parts=t.split(', ');const out=parts.map(x=>trCore(x,true));if(out.some(Boolean))return out.map((x,i)=>x||parts[i]).join('، ');}
+  if(!noSent){
+    const sents=(t.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g)||[]).map(x=>x.trim()).filter(Boolean);
+    if(sents.length>1){const out=[];let i=0,ok=false;
+      while(i<sents.length){let hit=null,j;for(j=sents.length;j>i;j--){const r=trCore(sents.slice(i,j).join(' '),true);if(r){hit=r;break;}}
+        if(hit){out.push(hit);ok=true;i=j;}else{out.push(sents[i]);i++;}}
+      if(ok) return out.join(' ');}
+  }
+  return null;
+}
+function trNode(node){
+  if(LANG!=='ar'||!window.AR) return;
+  const skip=el=>el&&el.closest&&el.closest('[translate="no"],script,style,textarea,code');
+  const doText=n=>{ if(skip(n.parentElement)) return; const raw=n.nodeValue; if(!/[A-Za-z]/.test(raw)) return;
+    const m=raw.match(/^(\s*)([\s\S]*?)(\s*)$/); const out=trCore(m[2]); if(out&&out!==m[2]) n.nodeValue=m[1]+out+m[3]; };
+  if(node.nodeType===3){ doText(node); return; }
+  if(node.nodeType!==1) return;
+  if(!skip(node)){ const w=document.createTreeWalker(node,NodeFilter.SHOW_TEXT); let n; const list=[]; while(n=w.nextNode()) list.push(n); list.forEach(doText); }
+  const els=[node,...node.querySelectorAll('[placeholder],[aria-label],[title]')];
+  els.forEach(el=>{ if(!el.getAttribute||(el.closest&&el.closest('[translate="no"]'))) return; ['placeholder','aria-label','title'].forEach(a=>{const v=el.getAttribute(a); if(v&&/[A-Za-z]/.test(v)){const o=trCore(v); if(o) el.setAttribute(a,o);}}); });
+}
+const i18nObs=new MutationObserver(ms=>{ for(const m of ms) m.addedNodes.forEach(trNode); });
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
+async function startLang(){
+  LANG=wantLang();
+  document.documentElement.lang=LANG; document.documentElement.dir=LANG==='ar'?'rtl':'ltr';
+  if(LANG==='ar'){
+    try{
+      if(!window.AR) await loadScript('/i18n-ar.js');
+      const l=document.createElement('link'); l.rel='stylesheet'; l.href='https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap'; document.head.appendChild(l);
+      document.title='Shelf Check — قارن منتجات التجميل';
+      trNode(document.body); i18nObs.observe(document.body,{childList:true,subtree:true});
+    }catch(e){ LANG='en'; document.documentElement.dir='ltr'; document.documentElement.lang='en'; }
+  }
+  document.documentElement.classList.remove('i18n-wait');
+}
+
+/* ============ NIGHT MODE ============ */
+const darkMQ=matchMedia('(prefers-color-scheme: dark)');
+function isDark(){return S.theme==='dark'||(S.theme==='auto'&&darkMQ.matches)}
+function applyTheme(){
+  const d=isDark(); document.documentElement.dataset.theme=d?'dark':'light';
+  const m=document.querySelector('meta[name=theme-color]'); if(m) m.content=d?'#151214':'#a8475e';
+  const b=document.getElementById('themebtn');
+  if(b) b.innerHTML=d?'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>':'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>';
+}
+darkMQ.addEventListener?.('change',()=>{if(S.theme==='auto')applyTheme()});
+
 /* ============ EVENTS ============ */
 let wipeArmed=false;
 document.addEventListener('click',e=>{
@@ -930,10 +1196,10 @@ document.addEventListener('click',e=>{
     case 'sharecmp':shareSheet('cmp');break;
     case 'shareall':shareSheet('all');break;
     case 'shareprod':shareSheet('one',id);break;
-    case 'sh-link':{const k=t.dataset.k,list=listFor(k,t.dataset.id);shareLink(list).then(u=>shareOrCopy('Shelf Check',k==='all'?`My beauty shelf on Shelf Check (${list.length} products)`:list.length>1?'Compare these products on Shelf Check':'Check this product on Shelf Check',u));break}
+    case 'sh-link':{const k=t.dataset.k,list=listFor(k,t.dataset.id);shareLink(list).then(u=>shareOrCopy('Shelf Check',tr(k==='all'?`My beauty shelf on Shelf Check (${list.length} products)`:list.length>1?'Compare these products on Shelf Check':'Check this product on Shelf Check'),u));break}
     case 'sh-img':{const list=listFor(t.dataset.k,t.dataset.id);toast('Making the image…');shareImage(list).catch(()=>toast("Couldn't make the image"));break}
     case 'sh-pdf':closeSheet();go('compare');setTimeout(()=>window.print(),300);break;
-    case 'sh-text':{const k=t.dataset.k;shareText('Shelf Check',k==='one'?productSummary(S.products.find(x=>x.id===t.dataset.id)):listSummary(listFor(k),k==='all'?'My Shelf Check list':'Shelf Check comparison'));break}
+    case 'sh-text':{const k=t.dataset.k;shareText('Shelf Check',k==='one'?productSummary(S.products.find(x=>x.id===t.dataset.id)):listSummary(listFor(k),tr(k==='all'?'My Shelf Check list':'Shelf Check comparison')));break}
     case 'sh-addall':addShared();break;
     case 'bk-download':saveFile(new Blob([backupData()],{type:'application/json'}),`shelf-check-backup-${new Date().toISOString().slice(0,10)}.json`);toast('Backup saved to your downloads');break;
     case 'bk-share':shareFile(new Blob([backupData()],{type:'application/json'}),`shelf-check-backup-${new Date().toISOString().slice(0,10)}.json`,'Shelf Check backup');break;
@@ -947,9 +1213,16 @@ document.addEventListener('click',e=>{
     case 'copybk':{const v=document.getElementById('bk');if(!v.value)v.value=JSON.stringify({v:1,currency:S.currency,products:S.products});navigator.clipboard?.writeText(v.value).then(()=>toast('Copied'),()=>{v.select();toast('Select all and copy')});break}
     case 'import':try{const d=JSON.parse(document.getElementById('bk').value);if(!Array.isArray(d.products))throw 0;const have=new Set(S.products.map(p=>p.id));cleanList(d.products).forEach(p=>{if(have.has(p.id))p.id=uid();S.products.push(p)});if(/^[A-Z]{3}$/.test(d.currency||''))S.currency=d.currency;save();closeSheet();render();toast(`Imported ${d.products.length} products`)}catch(err){toast("That backup couldn't be read")}break;
     case 'settings':settingsSheet();break;
+    case 'profile':profileSheet();break;
+    case 'skintype':S.skin={...(S.skin||{}),type:t.dataset.k};_an.clear();save();render();profileSheet();break;
+    case 'skintog':S.skin={...(S.skin||{}),[t.dataset.k]:!(S.skin||{})[t.dataset.k]};save();render();profileSheet();break;
+    case 'avoidtog':{const k=t.dataset.k;S.avoid=S.avoid||[];S.avoid=S.avoid.includes(k)?S.avoid.filter(x=>x!==k):[...S.avoid,k];save();render();profileSheet();break}
+    case 'langset':S.lang=t.dataset.k;save();location.reload();break;
+    case 'theme':S.theme=isDark()?'light':'dark';save();applyTheme();break;
+    case 'themeset':S.theme=t.dataset.k;save();applyTheme();settingsSheet();break;
     case 'scanclear':scanText='';renderScan();break;
     case 'scansave':formSheet(null,scanText);break;
-    case 'pref':S.prefs[t.dataset.k]=!S.prefs[t.dataset.k];save();renderSuggest();break;
+    case 'pref':S.prefs[t.dataset.k]=t.dataset.k==='noavoid'?S.prefs.noavoid===false:!S.prefs[t.dataset.k];save();renderSuggest();break;
     case 'mode':S.prefs.mode=t.dataset.k;save();renderSuggest();break;
   }
 });
@@ -964,6 +1237,8 @@ function render(){
 }
 window.addEventListener('hashchange',()=>{if(location.hash.startsWith('#s=')){const c=location.hash.slice(3);history.replaceState(null,'',location.pathname+'#'+tab);openShared(c);return}const h=location.hash.slice(1);if(['shelf','compare','scan','suggest'].includes(h)&&h!==tab){tab=h;render()}});
 load();
+applyTheme();
+startLang();
 {const h=location.hash.slice(1);if(h.startsWith('s=')){const c=h.slice(2);history.replaceState(null,'',location.pathname);setTimeout(()=>openShared(c),200);}else if(['shelf','compare','scan','suggest'].includes(h))tab=h;}
 render();
 </script>
