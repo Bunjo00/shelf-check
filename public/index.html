@@ -765,7 +765,7 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 
 function productSheet(id,fresh){
   const p=S.products.find(x=>x.id===id); if(!p)return; const f=full(p);
-  openSheet(`${fresh?`<div class="warn" style="background:var(--good-bg);color:var(--good);margin:0 0 12px">✓ Added${S.compare.includes(id)?' and ready to compare':''}. Tap Edit if anything looks off.${!p.ing?'<br><b>No ingredient list was found. Try another photo of the back.</b>':''}</div>
+  openSheet(`${fresh?`<div class="warn" style="background:var(--good-bg);color:var(--good);margin:0 0 12px">✓ Added${S.compare.includes(id)?' and ready to compare':''}. Tap Edit if anything looks off.${!p.ing?'<br><b>No ingredient list was found. Use "Scan ingredients" below.</b>':''}</div>
   <div class="row" style="margin-bottom:12px">${AI?`<label class="btn small primary" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Scan another</label>`:''}${S.compare.length>=2?'<button class="btn small" data-a="gocmp">Compare now →</button>':''}</div>`:''}
   <div class="row" style="align-items:flex-start"><div style="flex:1"><h2 translate="no">${esc(p.name)}</h2><div class="sub" style="color:var(--muted)">${esc(p.brand||'')} · ${esc(p.category||'')}</div></div><button class="iconbtn" data-a="close">✕</button></div>
   <div class="grid2" style="margin-top:12px">
@@ -779,6 +779,9 @@ function productSheet(id,fresh){
     <div>Cruelty-free</div><div>${tri(p.cf)}</div><div>Vegan</div><div>${tri(p.vegan)}</div>
     <div>Plastic-free pack</div><div>${tri(p.plastic)}</div><div>Refillable</div><div>${tri(p.refill)}</div>
   </div>
+  ${!p.ing?`<div class="card" style="margin-top:10px;border-color:var(--mod)"><b>Ingredients missing</b>
+    <p style="font-size:13.5px;color:var(--muted);margin:4px 0 10px">Some shops hide the list behind a tab (like "Ingredients" or "Ingredienser") and only load it when you tap it. Open that tab, take a screenshot, and scan it here. It fills in this product.</p>
+    <div class="row">${AI?`<label class="btn small primary" style="cursor:pointer"><input type="file" class="scanfile" data-target="${p.id}" accept="image/*" multiple hidden>📷 Scan ingredients</label>`:''}<button class="btn small" data-a="edit" data-id="${p.id}">✍️ Paste them</button></div></div>`:''}
   ${f.e.warn.map(w=>`<div class="warn">${esc(w)}</div>`).join('')}
   ${forYouHTML(f)}
   ${dupesHTML(f)}
@@ -872,9 +875,16 @@ async function shrink(file){
 }
 const CATS=['Moisturizer','Cleanser','Serum','Toner','Sunscreen','Foundation','Concealer','Powder','Blush','Bronzer','Highlighter','Lipstick','Lip gloss','Mascara','Eyeliner','Eyeshadow','Brow','Primer','Setting spray','Nail polish','Hair','Body','Fragrance','Other'];
 const normKey=s=>String(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+const STOP=new Set(['the','and','for','with','de','la','le','of','ml','g','oz','new','by']);
+const toks=s=>new Set(normKey(s).split(' ').filter(w=>w.length>1&&!STOP.has(w)));
+function nameSim(a,b){const A=toks(a),B=toks(b);if(!A.size||!B.size)return 0;let i=0;A.forEach(w=>{if(B.has(w))i++});return i/Math.min(A.size,B.size);}
 function findSame(d){
   const n=normKey(d.name),b=normKey(d.brand); if(!n) return null;
-  return S.products.find(p=>!p.demo&&normKey(p.name)===n&&(!b||!p.brand||normKey(p.brand)===b))||null;
+  const mine=S.products.filter(p=>!p.demo);
+  const exact=mine.find(p=>normKey(p.name)===n&&(!b||!p.brand||normKey(p.brand)===b)); if(exact) return exact;
+  const brandOk=p=>!b||!p.brand||normKey(p.brand)===b||normKey(p.brand).includes(b)||b.includes(normKey(p.brand));
+  const scored=mine.filter(brandOk).map(p=>({p,s:nameSim(p.name+' '+(p.brand||''),d.name+' '+(d.brand||''))})).filter(x=>x.s>=0.8).sort((x,y)=>y.s-x.s);
+  return scored.length&&(scored.length===1||scored[0].s>scored[1].s)?scored[0].p:null;
 }
 async function api(path,body){
   const r=await fetch(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
@@ -889,7 +899,7 @@ function showError(title,msg,withScan){
   sh.innerHTML=`<div class="grab"></div><h2>${esc(title)}</h2><p class="lede">${esc(msg)}</p><div class="row">${withScan&&AI?`<label class="btn small primary" style="cursor:pointer"><input type="file" class="scanfile" accept="image/*" multiple hidden>📷 Use a screenshot</label>`:''}<span class="spacer"></span><button class="btn" data-a="close">Close</button></div>`;
   if(!ov.classList.contains('on')) ov.classList.add('on');
 }
-async function runScan(files){
+async function runScan(files,target){
   files=[...files].slice(0,6); if(!files.length) return;
   const urls=files.map(f=>URL.createObjectURL(f));
   busy('Reading your screenshots…','Finding every product, its ingredients and reviews. This takes a few seconds.',urls);
@@ -897,7 +907,7 @@ async function runScan(files){
     const images=await Promise.all(files.map(shrink));
     const {products}=await api('/api/scan',{images});
     urls.forEach(u=>URL.revokeObjectURL(u));
-    ingest(products);
+    if(target&&S.products.some(p=>p.id===target)) fillProduct(target,products); else ingest(products);
   }catch(err){ showError("Scan didn't work",err.message||"Couldn't read those images. Try a clearer screenshot."); }
 }
 async function runLink(url){
@@ -905,6 +915,20 @@ async function runLink(url){
   busy('Reading the page…','Opening the link and pulling out the products, ingredients and reviews.');
   try{ const {products}=await api('/api/link',{url}); ingest(products); }
   catch(err){ showError("Couldn't read that link",(err.message||'')+(err.code==='blocked'||err.code==='no_products'||err.code==='fetch_failed'?' Tip: take a screenshot of the page and scan it instead.':''),true); }
+}
+function fillProduct(id,list){
+  const p=S.products.find(x=>x.id===id); if(!p) return;
+  const best=list.find(x=>String(x.ingredients||'').length>10)||list[0]; if(!best) return;
+  const tv=v=>['yes','no','unknown'].includes(v)?v:'unknown';
+  if(best.ingredients&&String(best.ingredients).length>10) p.ing=String(best.ingredients);
+  const n=v=>{const x=parseFloat(v);return isFinite(x)&&x>0?x:null};
+  if(!p.size&&n(best.size)){p.size=n(best.size);if(['ml','g','oz'].includes(best.unit))p.unit=best.unit;}
+  if(!p.price&&n(best.price)){p.price=n(best.price);if(/^[A-Za-z]{3}$/.test(best.currency||''))p.cur=best.currency.toUpperCase();}
+  for(const [k,src] of [['cf','cruelty_free'],['vegan','vegan'],['plastic','plastic_free_packaging'],['refill','refillable']]) if((p[k]||'unknown')==='unknown'&&tv(best[src])!=='unknown') p[k]=tv(best[src]);
+  const rv=best.reviews&&typeof best.reviews==='object'?best.reviews:null;
+  if(rv&&typeof rv.sentiment==='number'){p.reviews=p.reviews||[];p.reviews.push({at:Date.now(),rating:n(best.rating)&&best.rating<=5?+best.rating:null,count:n(best.review_count)||0,read:parseInt(rv.read)||0,sentiment:Math.max(0,Math.min(100,rv.sentiment)),pros:(rv.pros||[]).slice(0,4).map(String),cons:(rv.cons||[]).slice(0,4).map(String),skin:(rv.skin||[]).slice(0,3).map(String)});}
+  Object.assign(p,cleanProduct(p)); save(); render(); productSheet(id,true);
+  toast(p.ing?'Ingredients added':'No ingredients found in that image');
 }
 function ingest(list){
   const tv=v=>['yes','no','unknown'].includes(v)?v:'unknown';
@@ -987,7 +1011,7 @@ function reviewsHTML(p,f){
     <div class="row" style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px"><span style="font-size:13.5px;font-weight:500">My rating</span><span class="spacer"></span>${stars}</div>
     ${p.notes?`<p style="font-size:13.5px;margin-top:6px;color:var(--muted)">${esc(p.notes)}</p>`:''}</div>`;
 }
-document.addEventListener('change',e=>{ if(e.target.classList&&e.target.classList.contains('scanfile')){ const f=e.target.files; runScan(f); e.target.value=''; } });
+document.addEventListener('change',e=>{ if(e.target.classList&&e.target.classList.contains('scanfile')){ const f=e.target.files; runScan(f,e.target.dataset.target||null); e.target.value=''; } });
 
 /* ============ PORTABLE: backup files, share links, share images, PDF ============ */
 const SHARE_FIELDS=['name','brand','category','price','cur','size','unit','ing','cf','vegan','plastic','refill','reviews','url'];

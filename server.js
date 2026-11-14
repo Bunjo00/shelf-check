@@ -238,10 +238,32 @@ function extractPage(html) {
   // Keep the start of the page plus the parts around "ingredients" and "reviews".
   const parts = [text.slice(0, 9000)];
   const near = (re, win, max) => { let n = 0; for (const m of text.matchAll(re)) { if (n++ >= max) break; const i = m.index; if (i > 9000) parts.push('…' + text.slice(Math.max(0, i - 300), i + win)); } };
-  near(/ingredients|ingrédients|المكونات|inci/gi, 4000, 2);
-  near(/reviews?|ratings?|التقييمات/gi, 3500, 1);
+  near(/ingredien|ingrédient|inhaltsstoff|composition|zutaten|składnik|içindekiler|sammansättning|المكونات|성분|成分|\binci\b/gi, 4000, 3);
+  near(/reviews?|ratings?|anmeldelse|bewertung|avis|recensioni|reseñas|التقييمات/gi, 3500, 1);
   let excerpt = parts.join('\n').slice(0, 22000);
-  return { title, meta, ld, excerpt, textLength: text.length };
+  return { title, meta, ld, excerpt, textLength: text.length, inci: findIngredientLists(html) };
+}
+// Many shops keep the ingredient list in hidden page data (JSON inside <script>) and only show it when a tab is clicked.
+// Look through the raw page, scripts included, for anything shaped like an INCI list.
+function findIngredientLists(html) {
+  let raw = html.slice(0, 3e6)
+    .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/\\[nrt]/g, ' ').replace(/\\\//g, '/').replace(/\\"/g, '"');
+  raw = decode(raw.replace(/<[^>]+>/g, ' '));
+  const starts = /\b(?:Aqua|AQUA|Water|WATER|Eau|EAU|Glycerin|GLYCERIN|Dimethicone|DIMETHICONE|Talc|TALC|Mica|MICA|Paraffin|PARAFFIN|Cera Alba|CERA ALBA|Ricinus Communis|RICINUS COMMUNIS|Isododecane|ISODODECANE|Cyclopentasiloxane|Butylene Glycol|Caprylic\/Capric Triglyceride)\b/g;
+  const found = []; const seen = new Set(); let m;
+  while ((m = starts.exec(raw)) && found.length < 4) {
+    const chunk = raw.slice(m.index, m.index + 4000);
+    const end = chunk.search(/[{}<>\[\]"]|\s{3,}/);
+    const list = (end > 0 ? chunk.slice(0, end) : chunk).trim();
+    const commas = (list.match(/,/g) || []).length;
+    if (commas >= 6 && list.length >= 60) {
+      const key = list.slice(0, 80).toLowerCase();
+      if (!seen.has(key)) { seen.add(key); found.push(list.slice(0, 3000)); }
+      starts.lastIndex = m.index + list.length;
+    }
+  }
+  return found;
 }
 function fromStructuredData(ld) {
   // Fallback without AI: map schema.org Product data.
@@ -348,7 +370,7 @@ app.post('/api/link', async (req, res) => {
       const text = await fetchViaReader(finalUrl).catch(() => {
         throw Object.assign(new Error('This shop blocks automatic reading. Take a screenshot of the page and scan it instead.'), { code: 'blocked' });
       });
-      page = { title: '', meta: {}, ld: [], excerpt: text.slice(0, 22000), textLength: text.length };
+      page = { title: '', meta: {}, ld: [], excerpt: text.slice(0, 22000), textLength: text.length, inci: findIngredientLists(text) };
       via = 'reader';
     }
     console.log(`[link] ${new URL(finalUrl).hostname} via ${via}`);
@@ -362,6 +384,7 @@ app.post('/api/link', async (req, res) => {
 TITLE: ${page.title}
 META: ${JSON.stringify(page.meta)}
 STRUCTURED DATA: ${JSON.stringify(page.ld).slice(0, 12000)}
+${page.inci && page.inci.length ? 'POSSIBLE INGREDIENT LISTS FOUND IN HIDDEN PAGE DATA (use the one that belongs to the product):\n' + page.inci.join('\n---\n') : ''}
 TEXT:
 ${page.excerpt}
 </page>`;
