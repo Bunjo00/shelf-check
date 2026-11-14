@@ -9,6 +9,7 @@
 // is tried first and the paid one is used as a backup (change with AI_PROVIDER).
 
 import express from 'express';
+import crypto from 'node:crypto';
 import compression from 'compression';
 import dns from 'node:dns/promises';
 import net from 'node:net';
@@ -23,6 +24,12 @@ const GEMINI_KEY = env.GEMINI_API_KEY || '';
 const ANTHROPIC_KEY = env.ANTHROPIC_API_KEY || '';
 const GEMINI_MODELS = [...new Set([env.GEMINI_MODEL, 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite', 'gemini-2.5-flash'].filter(Boolean))];
 let geminiWorking = null; // remembers the first model that worked
+const modelDown = new Map();   // model -> time it failed (skip it for a while instead of waiting on it every time)
+const thinkPref = new Map();   // model -> thinking setting that worked
+// Small in-memory cache: same link or same screenshots within 6 hours = instant answer, no AI call.
+const answerCache = new Map();
+function cacheGet(k) { const v = answerCache.get(k); if (v && Date.now() - v.at < 6 * 3600e3) return v.data; answerCache.delete(k); return null; }
+function cacheSet(k, data) { if (answerCache.size > 300) answerCache.delete(answerCache.keys().next().value); answerCache.set(k, { at: Date.now(), data }); }
 const ANTHROPIC_MODEL = env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const ANTHROPIC_BASE = (env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/$/, '');
 const GEMINI_BASE = (env.GEMINI_BASE_URL || 'https://generativelanguage.googleapis.com').replace(/\/$/, '');
@@ -89,30 +96,49 @@ async function callAnthropic(prompt, images) {
   if (!r.ok) throw Object.assign(new Error(j?.error?.message || `Anthropic error ${r.status}`), { status: r.status });
   return (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
 }
-async function geminiOnce(model, prompt, images) {
+// Reading labels doesn't need deep reasoning, so ask for the least "thinking" each model allows (much faster).
+function thinkingOptions(model) {
+  if (/2\.5/.test(model)) return [{ thinkingBudget: 0 }, null];
+  return [{ thinkingLevel: 'minimal' }, { thinkingLevel: 'low' }, null];
+}
+async function geminiOnce(model, prompt, images, thinking) {
   const parts = [...images.map(i => ({ inline_data: { mime_type: i.mime, data: i.data } })), { text: prompt }];
+  const generationConfig = { temperature: 0, responseMimeType: 'application/json', maxOutputTokens: 8192 };
+  if (thinking) generationConfig.thinkingConfig = thinking;
   const r = await fetch(`${GEMINI_BASE}/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_KEY },
-    body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } }),
-    signal: AbortSignal.timeout(90000),
+    body: JSON.stringify({ contents: [{ role: 'user', parts }], generationConfig }),
+    signal: AbortSignal.timeout(60000),
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw Object.assign(new Error(`Gemini (${model}): ${j?.error?.message || 'error ' + r.status}`), { status: r.status });
-  const text = (j.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+  const text = (j.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join('');
   if (!text) throw Object.assign(new Error(`Gemini (${model}): empty answer (${j.candidates?.[0]?.finishReason || j.promptFeedback?.blockReason || 'unknown'})`), { status: 502 });
   return text;
 }
 async function callGemini(prompt, images) {
-  const order = geminiWorking ? [geminiWorking, ...GEMINI_MODELS.filter(m => m !== geminiWorking)] : GEMINI_MODELS;
+  const fresh = m => !modelDown.has(m) || Date.now() - modelDown.get(m) > 30 * 60e3;
+  let order = geminiWorking ? [geminiWorking, ...GEMINI_MODELS.filter(m => m !== geminiWorking)] : GEMINI_MODELS;
+  order = [...order.filter(fresh), ...order.filter(m => !fresh(m))];
   let last;
   for (const m of order) {
-    try { const t = await geminiOnce(m, prompt, images); geminiWorking = m; return t; }
-    catch (e) {
-      last = e;
-      // bad key or bad request: other models won't help
-      if (e.status === 400 && !/model|not found|not supported/i.test(e.message)) throw e;
-      if (e.status === 401) throw e;
+    const opts = thinkPref.has(m) ? [thinkPref.get(m)] : thinkingOptions(m);
+    for (const t of opts) {
+      const t0 = Date.now();
+      try {
+        const out = await geminiOnce(m, prompt, images, t);
+        geminiWorking = m; thinkPref.set(m, t); modelDown.delete(m);
+        console.log(`[ai] ${m} thinking=${t ? JSON.stringify(t) : 'default'} ${Date.now() - t0}ms`);
+        return out;
+      } catch (e) {
+        last = e;
+        if (e.status === 400 && /think/i.test(e.message)) continue;       // this model doesn't accept that setting: try the next one
+        if (e.status === 400 && !/model|not found|not supported/i.test(e.message)) throw e;
+        if (e.status === 401) throw e;
+        modelDown.set(m, Date.now());
+        break;                                                            // model unavailable or out of quota: next model
+      }
     }
   }
   throw last;
@@ -180,7 +206,7 @@ async function fetchPage(u) {
     const r = await fetch(url, {
       redirect: 'manual',
       headers: { 'user-agent': UA, accept: 'text/html,application/xhtml+xml', 'accept-language': 'en-US,en;q=0.9,ar;q=0.6' },
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(10000),
     }).catch(e => { throw Object.assign(new Error('Couldn\'t open that page'), { code: 'fetch_failed' }); });
     if (r.status >= 300 && r.status < 400 && r.headers.get('location')) {
       url = await checkUrl(new URL(r.headers.get('location'), url).toString());
@@ -206,7 +232,7 @@ function looksBlocked(html) {
 }
 async function fetchViaReader(u) {
   // Free public page reader used only when the shop blocks us directly.
-  const r = await fetch(READER + u, { headers: { accept: 'text/plain', 'x-return-format': 'text' }, signal: AbortSignal.timeout(30000) });
+  const r = await fetch(READER + u, { headers: { accept: 'text/plain', 'x-return-format': 'text' }, signal: AbortSignal.timeout(20000) });
   const t = await r.text();
   if (!r.ok || t.length < 300 || looksBlocked(t)) throw Object.assign(new Error('The shop blocked automatic reading'), { code: 'blocked' });
   return t.slice(0, 400000);
@@ -238,9 +264,9 @@ function extractPage(html) {
   // Keep the start of the page plus the parts around "ingredients" and "reviews".
   const parts = [text.slice(0, 9000)];
   const near = (re, win, max) => { let n = 0; for (const m of text.matchAll(re)) { if (n++ >= max) break; const i = m.index; if (i > 9000) parts.push('…' + text.slice(Math.max(0, i - 300), i + win)); } };
-  near(/ingredien|ingrédient|inhaltsstoff|composition|zutaten|składnik|içindekiler|sammansättning|المكونات|성분|成分|\binci\b/gi, 4000, 3);
+  near(/ingredien|ingrédient|inhaltsstoff|composition|zutaten|składnik|içindekiler|sammansättning|المكونات|성분|成分|\binci\b/gi, 3000, 3);
   near(/reviews?|ratings?|anmeldelse|bewertung|avis|recensioni|reseñas|التقييمات/gi, 3500, 1);
-  let excerpt = parts.join('\n').slice(0, 22000);
+  let excerpt = parts.join('\n').slice(0, 15000);
   return { title, meta, ld, excerpt, textLength: text.length, inci: findIngredientLists(html) };
 }
 // Many shops keep the ingredient list in hidden page data (JSON inside <script>) and only show it when a tab is clicked.
@@ -347,7 +373,10 @@ app.post('/api/scan', async (req, res) => {
     if (!images.length) throw Object.assign(new Error('No images received'), { code: 'bad_input' });
     const lim = allow(req.ip);
     if (lim) throw Object.assign(new Error(lim === 'daily' ? 'The app has reached today\'s scan limit. Try again tomorrow.' : 'Too many scans. Wait a bit and try again.'), { code: lim === 'daily' ? 'daily' : 'rate_limited' });
+    const key = 'scan:' + crypto.createHash('sha1').update(images.map(i => i.data).join('|')).digest('hex');
+    const hit = cacheGet(key); if (hit) return res.json({ products: hit, cached: true });
     const products = await askAI(SCAN_PROMPT, images);
+    if (products.length) cacheSet(key, products);
     if (!products.length) throw Object.assign(new Error('No products found in those images'), { code: 'no_products' });
     res.json({ products });
   } catch (e) { fail(res, e); }
@@ -358,6 +387,8 @@ app.post('/api/link', async (req, res) => {
     const raw = String(req.body?.url || '').trim();
     const found = raw.match(/https?:\/\/[^\s"'<>]+/i);   // allows pasting "Look at this! https://..."
     if (!found) throw Object.assign(new Error('Paste a link that starts with http'), { code: 'bad_url' });
+    const linkKey = 'link:' + found[0].replace(/[?#].*$/, '').toLowerCase();
+    const hitL = cacheGet(linkKey); if (hitL) return res.json({ products: hitL, cached: true });
     let page, finalUrl = found[0], via = 'direct';
     try {
       const got = await fetchPage(found[0]);
@@ -383,7 +414,7 @@ app.post('/api/link', async (req, res) => {
 <page>
 TITLE: ${page.title}
 META: ${JSON.stringify(page.meta)}
-STRUCTURED DATA: ${JSON.stringify(page.ld).slice(0, 12000)}
+STRUCTURED DATA: ${JSON.stringify(page.ld).slice(0, 8000)}
 ${page.inci && page.inci.length ? 'POSSIBLE INGREDIENT LISTS FOUND IN HIDDEN PAGE DATA (use the one that belongs to the product):\n' + page.inci.join('\n---\n') : ''}
 TEXT:
 ${page.excerpt}
@@ -394,6 +425,7 @@ ${page.excerpt}
     }
     if (!products.length) throw Object.assign(new Error('No products found on that page. Try a screenshot instead.'), { code: 'no_products' });
     products.forEach(p => { p.url = finalUrl; });
+    if (products.some(p => p.ingredients)) cacheSet(linkKey, products);
     res.json({ products });
   } catch (e) { fail(res, e); }
 });
@@ -408,6 +440,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 app.get('*', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
+if (process.argv[1] === fileURLToPath(import.meta.url) && GEMINI_KEY) setTimeout(() => callGemini('Reply with exactly {"ok":true}', []).catch(() => {}), 1500);
 if (process.argv[1] === fileURLToPath(import.meta.url)) app.listen(PORT, () => console.log(`Shelf Check on :${PORT} · AI: ${providers().join(' → ') || 'none (set GEMINI_API_KEY or ANTHROPIC_API_KEY)'}`));
 
 export { extractPage, fromStructuredData, parseJSON, normalize, checkUrl, privateIP };

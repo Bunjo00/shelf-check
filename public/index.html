@@ -867,10 +867,10 @@ function scanHero(){
 }
 async function shrink(file){
   try{
-    const img=await createImageBitmap(file); const k=Math.min(1,1600/Math.max(img.width,img.height));
+    const img=await createImageBitmap(file); const k=Math.min(1,1400/Math.max(img.width,img.height));
     const c=document.createElement('canvas'); c.width=Math.round(img.width*k); c.height=Math.round(img.height*k);
     c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-    return c.toDataURL('image/jpeg',0.85);
+    return c.toDataURL('image/jpeg',0.8);
   }catch(e){ return await new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(r.result);r.onerror=no;r.readAsDataURL(file)}); }
 }
 const CATS=['Moisturizer','Cleanser','Serum','Toner','Sunscreen','Foundation','Concealer','Powder','Blush','Bronzer','Highlighter','Lipstick','Lip gloss','Mascara','Eyeliner','Eyeshadow','Brow','Primer','Setting spray','Nail polish','Hair','Body','Fragrance','Other'];
@@ -903,12 +903,14 @@ async function runScan(files,target){
   files=[...files].slice(0,6); if(!files.length) return;
   const urls=files.map(f=>URL.createObjectURL(f));
   busy('Reading your screenshots…','Finding every product, its ingredients and reviews. This takes a few seconds.',urls);
+  const step=setTimeout(()=>{const l=sh.querySelector('.lede');if(l)l.textContent=tr('Almost there…');},6000);
   try{
     const images=await Promise.all(files.map(shrink));
     const {products}=await api('/api/scan',{images});
     urls.forEach(u=>URL.revokeObjectURL(u));
+    clearTimeout(step);
     if(target&&S.products.some(p=>p.id===target)) fillProduct(target,products); else ingest(products);
-  }catch(err){ showError("Scan didn't work",err.message||"Couldn't read those images. Try a clearer screenshot."); }
+  }catch(err){ clearTimeout(step); showError("Scan didn't work",err.message||"Couldn't read those images. Try a clearer screenshot."); }
 }
 async function runLink(url){
   url=String(url||'').trim(); if(!url) return;
